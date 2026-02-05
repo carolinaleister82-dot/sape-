@@ -1,0 +1,3601 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta 
+  // JSON helpers (robust)
+  function loadJSON(key, fallback){
+    try{
+      const raw = localStorage.getItem(key);
+      if(raw==null || raw==="") return fallback;
+      return JSON.parse(raw);
+    }catch(e){
+      return fallback;
+    }
+  }
+  function saveJSON(key, value){
+    try{
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SAPE V9.7 — Modular (Erros + Cronograma + Pegadinhas)</title>
+<style>
+  :root{
+    --bg:#f5f6fb; --card:#ffffff; --text:#1f2937; --muted:#6b7280; --border:#e5e7eb;
+    --shadow: 0 10px 25px rgba(17,24,39,.06); --radius:16px; --pad:16px;
+    --blue:#dbeafe; --green:#dcfce7; --pink:#fce7f3; --lav:#ede9fe; --yellow:#fef9c3;
+    --red:#fee2e2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  header{position:sticky;top:0;z-index:10;backdrop-filter: blur(10px);background: rgba(245,246,251,.85);border-bottom:1px solid var(--border);}
+  .topbar{max-width:1100px;margin:0 auto;padding:14px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.2px}
+  .dot{width:12px;height:12px;border-radius:999px;background:linear-gradient(135deg,#a7f3d0,#bfdbfe,#fbcfe8);box-shadow:0 6px 14px rgba(0,0,0,.12);}
+  nav{display:flex;gap:8px;flex-wrap:wrap}
+  .tab{border:1px solid var(--border);background:rgba(255,255,255,.7);padding:10px 12px;border-radius:999px;cursor:pointer;color:var(--muted);font-weight:700;transition:.15s;}
+  .tab.active{color:var(--text);background:#fff;box-shadow:0 6px 16px rgba(0,0,0,.06);}
+  main{max-width:1100px;margin:0 auto;padding:18px 16px 40px;}
+  .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;}
+  @media (max-width: 960px){.grid{grid-template-columns:1fr;}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:var(--pad);}
+  h2{margin:0 0 10px 0;font-size:18px;}
+  h3{margin:0 0 10px 0;font-size:15px;color:var(--muted);font-weight:800;}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media (max-width: 640px){.row{grid-template-columns:1fr;}}
+  label{font-size:12px;color:var(--muted);font-weight:800;display:block;margin:2px 0 6px;}
+  input,select,textarea{width:100%;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:#fff;outline:none;font-size:14px;}
+  textarea{min-height:88px;resize:vertical;}
+  .btn{border:1px solid var(--border);background:#fff;padding:10px 12px;border-radius:12px;cursor:pointer;font-weight:800;transition:.15s;}
+  .btn.primary{border-color:transparent;background:linear-gradient(135deg,#dbeafe,#ede9fe);}
+  .btn.danger{background:linear-gradient(135deg,var(--red),#fce7f3);border-color:transparent;}
+  .btnbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--muted);font-weight:800;font-size:12px;}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  @media (max-width: 860px){.kpis{grid-template-columns:repeat(2,1fr);} }
+  .kpi{border-radius:14px;padding:12px;border:1px solid var(--border);background:#fff;}
+  .kpi .n{font-size:22px;font-weight:900;line-height:1.1;}
+  .kpi .t{font-size:12px;color:var(--muted);font-weight:900;margin-top:6px;}
+  .kpi.blue{background:var(--blue)} .kpi.green{background:var(--green)} .kpi.pink{background:var(--pink)} .kpi.lav{background:var(--lav)} .kpi.yellow{background:var(--yellow)}
+  table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border-radius:14px;border:1px solid var(--border);}
+  th,td{padding:10px 10px;border-bottom:1px solid var(--border);vertical-align:top;font-size:13px;}
+  th{background:#fafafa;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;}
+  tr:last-child td{border-bottom:none;}
+  .muted{color:var(--muted)} .tiny{font-size:12px;}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .badge{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:900;border:1px solid var(--border);background:#fff;}
+  .badge.overdue{background:var(--pink)} .badge.today{background:var(--yellow)} .badge.soon{background:var(--blue)}
+  .section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+  .hr{height:1px;background:var(--border);margin:14px 0;}
+  .note{font-size:12px;color:var(--muted);line-height:1.35;}
+  .toast{position:fixed;right:16px;bottom:16px;background:#111827;color:#fff;padding:10px 12px;border-radius:12px;box-shadow:0 18px 40px rgba(0,0,0,.22);opacity:0;transform:translateY(8px);transition:.18s;max-width:min(520px, calc(100vw - 32px));font-size:13px;}
+  .toast.show{opacity:1;transform:translateY(0);}
+
+  details{border:1px solid var(--border); border-radius:14px; background:#fff; padding:10px 12px; box-shadow:none;}
+  details + details{margin-top:10px;}
+  summary{cursor:pointer; font-weight:900; color:var(--text); list-style:none; display:flex; align-items:center; justify-content:space-between;}
+  summary::-webkit-details-marker{display:none;}
+  .chev{font-size:12px; color:var(--muted);}
+  .compact .actions .btn{padding:8px 10px; border-radius:10px;}
+  .compact table th, .compact table td{padding:9px 9px;}
+
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{border:1px solid var(--border);background:#fff;padding:8px 10px;border-radius:999px;cursor:pointer;font-weight:900;font-size:12px;color:var(--muted);transition:.12s;}
+  .chip:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(0,0,0,.06);}
+  .seg{display:flex;gap:8px;flex-wrap:wrap;}
+  .seg .btn{padding:8px 10px;border-radius:999px;}
+  .statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  @media (max-width: 960px){.statgrid{grid-template-columns:1fr;}}
+  .statcard{border:1px solid var(--border);border-radius:14px;padding:12px;background:#fff;}
+  .statcard .h{font-weight:900;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;}
+  .statcard .v{font-weight:900;font-size:18px;margin-top:6px;}
+  .bar{height:10px;border-radius:999px;border:1px solid var(--border);background:#fafafa;overflow:hidden;}
+  .bar > div{height:100%;background:linear-gradient(135deg,#dbeafe,#ede9fe);}
+
+
+  .fatal{
+    position:sticky; top:0; z-index:9999;
+    margin:12px auto 0;
+    max-width:1100px;
+    border:1px solid rgba(239,68,68,.35);
+    background:rgba(254,242,242,.9);
+    color:#7f1d1d;
+    border-radius:14px;
+    padding:12px 14px;
+    box-shadow:0 10px 24px rgba(0,0,0,.08);
+    backdrop-filter: blur(6px);
+    font-weight:800;
+  }
+  .fatal .tiny{font-weight:700;color:#991b1b;margin-top:6px;}
+  .fatal code{
+    display:block;
+    white-space:pre-wrap;
+    background:rgba(255,255,255,.75);
+    border:1px solid rgba(239,68,68,.25);
+    padding:10px;
+    border-radius:12px;
+    margin-top:10px;
+    font-weight:700;
+    color:#7f1d1d;
+  }
+  .fatal .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .fatal .btn{border-color:rgba(239,68,68,.35);}
+
+</style>
+</head>
+<body>
+  <div id="fatalBanner" class="fatal" style="display:none;"></div>
+
+<header>
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span> SAPE <span class="muted tiny">V9.7 — Modular</span></div>
+    <nav>
+      <button class="tab active" data-tab="dashboard">Dashboard</button>
+      <button class="tab" data-tab="errors">Caderno de Erros</button>
+      <button class="tab" data-tab="schedule">Cronograma</button>
+      <button class="tab" data-tab="traps">Pegadinhas</button>
+      <button class="tab" data-tab="sim">Simulados</button>
+      <button class="tab" data-tab="questions">Questões</button>
+      <button class="tab" data-tab="settings">Backup</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div id="app"></div>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* =========================
+   CORE (Store + Storage)
+========================= */
+
+const STORAGE_KEY = "SAPE_STATE_V7";
+const STORAGE_BACKUP_KEY = STORAGE_KEY + "_BACKUP";
+const STORAGE_META_KEY = STORAGE_KEY + "_META";
+const STATE_VERSION = "9.7";
+const CORE_STABLE_VERSION = "9.1";
+const SCHEMA_VERSION = 1; // core contract version
+const DEBUG_KEY = "SAPE_DEBUG";
+const AGGRO_KEY = "SAPE_AGGRO"; // 0.5..1.5
+const WHY_DISC_KEY = "SAPE_WHY_DISC";
+
+function uid(){
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "id_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+}
+
+function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function fmtDate(d){
+  if(!d) return "-";
+  const x = (d instanceof Date) ? d : new Date(d);
+  if(Number.isNaN(x.getTime())) return "-";
+  return x.toLocaleDateString("pt-BR");
+}
+function safeString(v){ return (typeof v === "string") ? v : (v == null ? "" : String(v)); }
+function escapeHtml(str){
+  const s = safeString(str);
+  return s.replace(/[&<>"']/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[ch]));
+}
+
+function toast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=> el.classList.remove("show"), 1800);
+}
+
+function sanitizeError(e){
+  const x = e && typeof e === "object" ? e : {};
+  return {
+    id: safeString(x.id) || uid(),
+    createdAt: x.createdAt ? new Date(x.createdAt).toISOString() : new Date().toISOString(),
+    examId: safeString(x.examId) || getActiveExam(),
+    disc: safeString(x.disc),
+    topic: safeString(x.topic),
+    bank: safeString(x.bank),
+    cause: safeString(x.cause),
+    notes: safeString(x.notes),
+    mistakeType: safeString(x.mistakeType),
+    nextReviewAt: x.nextReviewAt ? new Date(x.nextReviewAt).toISOString() : null,
+    reviewHistory: Array.isArray(x.reviewHistory) ? x.reviewHistory.map(d => new Date(d).toISOString()) : []
+  };
+}
+
+function sanitizeTrap(t){
+  const x = t && typeof t === "object" ? t : {};
+  return {
+    id: safeString(x.id) || uid(),
+    createdAt: x.createdAt ? new Date(x.createdAt).toISOString() : new Date().toISOString(),
+    examId: safeString(x.examId) || getActiveExam(),
+    disc: safeString(x.disc),
+    topic: safeString(x.topic),
+    bank: safeString(x.bank) || "AUTO",
+    type: safeString(x.type) || "Ambígua/dupla interpretação",
+    text: safeString(x.text),
+    fix: safeString(x.fix),
+    danger: Number.isFinite(Number(x.danger)) ? Math.max(0, Math.min(100, Number(x.danger))) : 50,
+    typical: Array.isArray(x.typical) ? x.typical.map(safeString).slice(0,8) : [],
+    trainPlan: Array.isArray(x.trainPlan) ? x.trainPlan.map(safeString).slice(0,8) : []
+  };
+}
+
+function sanitizeQuestion(q){
+  const x = q && typeof q === "object" ? q : {};
+  return {
+    id: safeString(x.id) || uid(),
+    createdAt: x.createdAt ? new Date(x.createdAt).toISOString() : new Date().toISOString(),
+    examId: safeString(x.examId) || getActiveExam(),
+    disc: safeString(x.disc),
+    topic: safeString(x.topic),
+    bank: safeString(x.bank),
+    source: safeString(x.source),
+    qtext: safeString(x.qtext),
+    answerKey: safeString(x.answerKey),      // gabarito (opcional)
+    userAnswer: safeString(x.userAnswer),    // resposta marcada (opcional)
+    isCorrect: (typeof x.isCorrect === "boolean") ? x.isCorrect : null,
+    difficulty: safeString(x.difficulty),    // fácil/média/difícil (opcional)
+    timeMin: Number.isFinite(Number(x.timeMin)) ? Math.max(0, Number(x.timeMin)) : null,
+    notes: safeString(x.notes),
+    tags: Array.isArray(x.tags) ? x.tags.map(safeString).slice(0,10) : [],
+    createdErrorId: safeString(x.createdErrorId),
+    createdTrapId: safeString(x.createdTrapId),
+  };
+}
+
+function sanitizeState(raw){
+  const s = raw && typeof raw === "object" ? raw : {};
+  const errors = Array.isArray(s.errors) ? s.errors : [];
+  const traps = Array.isArray(s.traps) ? s.traps : [];
+  const questions = Array.isArray(s.questions) ? s.questions : [];
+  const advSim = s.advSim && typeof s.advSim === "object" ? s.advSim : null;
+
+  return {
+    version: s.version || STATE_VERSION,
+    errors: errors.map(sanitizeError),
+    traps: traps.map(sanitizeTrap),
+    questions: questions.map(sanitizeQuestion),
+    advSim: advSim,
+  };
+}
+
+function migrate(raw){
+  const s = sanitizeState(raw);
+  return { ...s, version: STATE_VERSION };
+}
+
+
+
+
+// Global error overlay (helps debugging on mobile)
+(function(){
+  function showErr(msg){
+    try{
+      let el = document.getElementById('fatalErr');
+      if(!el){
+        el = document.createElement('div');
+        el.id = 'fatalErr';
+        el.style.cssText = 'position:fixed;inset:0;background:rgba(255,255,255,0.96);z-index:9999;padding:16px;overflow:auto;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial';
+        document.body.appendChild(el);
+      }
+      el.innerHTML = '<h2 style="margin:0 0 8px 0;">Erro no SAPE</h2>' +
+        '<div style="color:#555;margin-bottom:10px;">Copie esta mensagem e me envie no chat:</div>' +
+        '<pre style="white-space:pre-wrap;background:#f5f5f5;padding:12px;border-radius:12px;">' + (msg||'') + '</pre>' +
+        '<button onclick="location.reload()" style="margin-top:12px;padding:10px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;">Recarregar</button>';
+    }catch{}
+  }
+  window.addEventListener('error', (e)=> showErr(e.message + '\n' + (e.filename||'') + ':' + (e.lineno||'') ));
+  window.addEventListener('unhandledrejection', (e)=> showErr(String(e.reason||e)));
+})();
+
+/* =========================================================
+   MODULE: multi-exam base
+   ========================================================= */
+const ACTIVE_EXAM_KEY = "SAPE_ACTIVE_EXAM";
+
+const EXAMS = {
+  TRT_AJ: {
+    name: "TRT – Analista Judiciário",
+    // Pesos iniciais (ajustáveis no painel "Comparativo").
+    // Obs.: como TRTs variam por região e edital, este é um ponto de partida pragmático.
+    weights: {
+      "Direito do Trabalho": 1.60,
+      "Processo do Trabalho": 1.55,
+      "Direito Constitucional": 1.20,
+      "Direito Administrativo": 1.10,
+      "Direito Civil": 1.00,
+      "Processo Civil": 1.00,
+      "Direito Penal": 0.70,
+      "Processo Penal": 0.70,
+      "Português": 0.90,
+      "RLM": 0.70,
+      "Informática": 0.60,
+    }
+  },
+  TRE_AJ: {
+    name: "TRE – Analista Judiciário",
+    weights: {
+      "Direito Eleitoral": 1.70,
+      "Direito Constitucional": 1.30,
+      "Direito Administrativo": 1.10,
+      "Direito Civil": 0.90,
+      "Processo Civil": 0.90,
+      "Português": 0.90,
+      "Informática": 0.60,
+      "RLM": 0.60,
+    }
+  },
+  INSS_ANALISTA: {
+    name: "INSS – Analista Seguridade",
+    weights: {
+      "Direito Previdenciário": 1.70,
+      "Português": 1.00,
+      "RLM": 0.80,
+      "Informática": 0.70,
+      "Direito Constitucional": 0.90,
+      "Direito Administrativo": 0.90,
+      "Administração Pública": 0.70,
+    }
+  },
+  INSS_TEC: {
+    name: "INSS – Técnico Seguridade",
+    weights: {
+      "Direito Previdenciário": 1.70,
+      "Português": 1.00,
+      "RLM": 0.90,
+      "Informática": 0.80,
+      "Direito Constitucional": 0.80,
+      "Direito Administrativo": 0.80,
+    }
+  },
+  RFB_AUDITOR: {
+    name: "Receita Federal – Auditor",
+    weights: {
+      "Português": 0.90,
+      "RLM": 0.90,
+      "Contabilidade": 1.50,
+      "Direito Tributário": 1.60,
+      "Legislação Tributária": 1.50,
+      "Direito Constitucional": 1.10,
+      "Direito Administrativo": 1.00,
+      "Comércio Internacional": 0.80,
+      "TI": 0.80,
+    }
+  },
+  AFT: {
+    name: "Auditor-Fiscal do Trabalho",
+    weights: {
+      "Direito do Trabalho": 1.60,
+      "Processo do Trabalho": 1.30,
+      "Segurança e Saúde no Trabalho": 1.20,
+      "Legislação do Trabalho": 1.20,
+      "Direito Constitucional": 1.00,
+      "Direito Administrativo": 1.00,
+      "Português": 0.80,
+      "RLM": 0.70,
+      "Economia": 0.70,
+    }
+  },
+  PCPR_AGENTE: {
+    name: "PCPR – Agente de Polícia",
+    weights: {
+      "Português": 1.20,
+      "RLM": 0.90,
+      "Informática": 0.80,
+      "Atualidades": 0.70,
+      "Direito Constitucional": 1.00,
+      "Direito Administrativo": 0.90,
+      "Direito Penal": 1.30,
+      "Processo Penal": 1.20,
+      "Direitos Humanos": 0.90,
+      "Legislação Especial": 0.90,
+      "Legislação PCPR/PR": 0.80,
+    }
+  }
+};
+
+
+
+// ===== Pesos por disciplina (customizável) =====
+const EXAM_WEIGHTS_PREFIX = "SAPE_EXAM_WEIGHTS::";
+
+function loadExamWeights(examId){
+  const key = EXAM_WEIGHTS_PREFIX + examId;
+  return loadJSON(key, {});
+}
+function saveExamWeights(examId, obj){
+  const key = EXAM_WEIGHTS_PREFIX + examId;
+  saveJSON(key, obj || {});
+}
+function resetExamWeights(examId){
+  const key = EXAM_WEIGHTS_PREFIX + examId;
+  try{ localStorage.removeItem(key); }catch{}
+}
+function getExamWeights(examId){
+  const base = (EXAMS[examId] && EXAMS[examId].weights) ? EXAMS[examId].weights : {};
+  const custom = loadExamWeights(examId);
+  return Object.assign({}, base, custom);
+}
+function getDiscWeight(examId, disc){
+  const w = getExamWeights(examId)[disc];
+  const num = Number(w);
+  return Number.isFinite(num) && num>0 ? num : 1;
+}
+function listDiscsForExam(state, examId){
+  const out = new Set();
+  // do que já existe no banco
+  (state.errors||[]).forEach(e=>{ if(e.examId===examId && e.disc) out.add(e.disc); });
+  (state.questions||[]).forEach(q=>{ if(q.examId===examId && q.disc) out.add(q.disc); });
+  // do template do edital (pesos base)
+  Object.keys(getExamWeights(examId)||{}).forEach(d=>out.add(d));
+  return Array.from(out).filter(Boolean).sort((a,b)=>a.localeCompare(b));
+}
+
+function getActiveExam(){
+  try{
+    return localStorage.getItem(ACTIVE_EXAM_KEY) || "TRT_AJ";
+  }catch{
+    return "TRT_AJ";
+  }
+}
+
+function setActiveExam(id){
+  try{
+    localStorage.setItem(ACTIVE_EXAM_KEY, id);
+  }catch{}
+}
+
+/* =========================================================
+   MODULE: core/state-contract
+   ========================================================= */
+const STATE_ALLOWED_KEYS = new Set(["version","schemaVersion","errors","traps","questions","advSim"]);
+function normalizeState(raw){
+  const s = (raw && typeof raw === "object") ? raw : {};
+  const out = {
+    version: s.version || STATE_VERSION,
+    schemaVersion: Number.isFinite(s.schemaVersion) ? s.schemaVersion : SCHEMA_VERSION,
+    errors: Array.isArray(s.errors) ? s.errors : [],
+    traps: Array.isArray(s.traps) ? s.traps : [],
+    questions: Array.isArray(s.questions) ? s.questions : [],
+    advSim: s.advSim || null,
+  };
+  return out;
+}
+
+function validateStateStrict(state){
+  const s = normalizeState(state);
+
+  // unknown keys detection (non-fatal unless debug)
+  try{
+    const keys = Object.keys(state || {});
+    const unknown = keys.filter(k=> !STATE_ALLOWED_KEYS.has(k));
+    if(unknown.length) dwarn("Chaves desconhecidas no state (ignoradas):", unknown);
+  }catch{}
+
+  // arrays must contain objects with ids (where applicable)
+  const ids = new Set();
+  for(const e of s.errors){
+    invariant(e && typeof e === "object", "error item inválido");
+    invariant(typeof e.id === "string" && e.id.length>0, "error.id ausente");
+    invariant(!ids.has("e:"+e.id), "error.id duplicado");
+    ids.add("e:"+e.id);
+  }
+  for(const t of s.traps){
+    invariant(t && typeof t === "object", "trap item inválido");
+    invariant(typeof t.id === "string" && t.id.length>0, "trap.id ausente");
+    invariant(!ids.has("t:"+t.id), "trap.id duplicado");
+    ids.add("t:"+t.id);
+  }
+  for(const q of s.questions){
+    invariant(q && typeof q === "object", "question item inválido");
+    invariant(typeof q.id === "string" && q.id.length>0, "question.id ausente");
+    invariant(!ids.has("q:"+q.id), "question.id duplicado");
+    ids.add("q:"+q.id);
+  }
+
+  // schema/version types
+  invariant(Number.isFinite(s.schemaVersion), "schemaVersion inválido");
+  invariant(typeof s.version === "string", "version inválida");
+
+  return s;
+}
+
+function loadState(){
+  const empty = { version: STATE_VERSION, errors: [], traps: [], questions: [], advSim: null };
+
+  function parseOrNull(raw){
+    if(!raw) return null;
+    try{ return JSON.parse(raw); }catch{ return null; }
+  }
+  function isValidShape(x){
+    return x && typeof x === "object" &&
+      ("errors" in x) && ("traps" in x) && ("questions" in x);
+  }
+
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const parsed = parseOrNull(raw);
+    if(parsed && isValidShape(parsed)) return migrate(validateStateStrict(parsed));
+
+    // fallback: backup
+    const braw = localStorage.getItem(STORAGE_BACKUP_KEY);
+    const b = parseOrNull(braw);
+    if(b && isValidShape(b)){
+      // restore backup as primary for stability
+      try{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(b));
+        localStorage.setItem(STORAGE_META_KEY, JSON.stringify({ restoredAt: Date.now(), reason: "fallback_backup" }));
+      }catch{}
+      return migrate(validateStateStrict(b));
+    }
+
+    return migrate(validateStateStrict(empty));
+  }catch{
+    return migrate(validateStateStrict(empty));
+  }
+}
+
+function saveState(state){
+  const safe = validateStateStrict(state);
+
+  try{
+    // keep last known-good snapshot
+    const prev = localStorage.getItem(STORAGE_KEY);
+    if(prev){
+      localStorage.setItem(STORAGE_BACKUP_KEY, prev);
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(safe));
+    localStorage.setItem(STORAGE_META_KEY, JSON.stringify({ savedAt: Date.now(), version: STATE_VERSION, schemaVersion: SCHEMA_VERSION }));
+  }catch(e){
+    console.warn("Falha ao salvar", e);
+  }
+}
+
+// Debounced save to avoid heavy writes
+let __saveTimer = null;
+function debouncedSave(state){
+  try{
+    if(__saveTimer) clearTimeout(__saveTimer);
+    __saveTimer = setTimeout(()=>{
+      __saveTimer = null;
+      saveState(state);
+      dlog('state salvo');
+    }, 200);
+  }catch(e){
+    console.warn('debouncedSave falhou', e);
+  }
+}
+
+function createStore({ initialState, reducer }){
+  let state = initialState;
+  const listeners = new Set();
+  function getState(){ return state; }
+  function dispatch(action){
+    const next = reducer(state, action);
+    if(next !== state){
+      state = next;
+      debouncedSave(state);
+      listeners.forEach(fn => fn(state, action));
+    }
+  }
+  function subscribe(fn){ listeners.add(fn); return () => listeners.delete(fn); }
+  return { getState, dispatch, subscribe };
+}
+
+/* =========================
+   ACTIONS
+========================= */
+
+const A = {
+  ERROR_ADD:"ERROR_ADD",
+  ERROR_UPDATE:"ERROR_UPDATE",
+  ERROR_DELETE:"ERROR_DELETE",
+  ERROR_MARK_REVIEWED:"ERROR_MARK_REVIEWED",
+  ERROR_POSTPONE:"ERROR_POSTPONE",
+  ERROR_SET_NEXT_REVIEW:"ERROR_SET_NEXT_REVIEW",
+
+  TRAP_ANALYZE:"TRAP_ANALYZE",
+  TRAP_ADD:"TRAP_ADD",
+  TRAP_DELETE:"TRAP_DELETE",
+  TRAP_SIM_START:"TRAP_SIM_START",
+  TRAP_SIM_ANSWER:"TRAP_SIM_ANSWER",
+  TRAP_SIM_END:"TRAP_SIM_END",
+
+  Q_ADD:"Q_ADD",
+  Q_DELETE:"Q_DELETE",
+
+  STATE_IMPORT:"STATE_IMPORT",
+  STATE_RESET:"STATE_RESET",
+};
+
+/* =========================
+   REDUCERS
+========================= */
+
+function errorsReducer(slice, action){
+  const errors = Array.isArray(slice) ? slice : [];
+  switch(action.type){
+    case A.ERROR_ADD: return [...errors, sanitizeError(action.payload)];
+    case A.ERROR_UPDATE:{
+      const id = safeString(action.id);
+      const patch = action.patch && typeof action.patch === "object" ? action.patch : {};
+      return errors.map(e => e.id === id ? sanitizeError({ ...e, ...patch, id: e.id }) : e);
+    }
+    case A.ERROR_DELETE:{
+      const id = safeString(action.id);
+      return errors.filter(e => e.id !== id);
+    }
+    case A.ERROR_SET_NEXT_REVIEW:{
+      const id = safeString(action.id);
+      const when = action.when ? new Date(action.when) : null;
+      const iso = when && !Number.isNaN(when.getTime()) ? when.toISOString() : null;
+      return errors.map(e => e.id === id ? { ...e, nextReviewAt: iso } : e);
+    }
+    case A.ERROR_POSTPONE:{
+      const id = safeString(action.id);
+      const days = Number(action.days || 1);
+      return errors.map(e => {
+        if(e.id !== id) return e;
+        const base = e.nextReviewAt ? new Date(e.nextReviewAt) : new Date();
+        const next = addDays(base, days);
+        return { ...e, nextReviewAt: next.toISOString() };
+      });
+    }
+    case A.ERROR_MARK_REVIEWED:{
+      const id = safeString(action.id);
+      const now = new Date();
+      return errors.map(e => {
+        if(e.id !== id) return e;
+        const hist = Array.isArray(e.reviewHistory) ? e.reviewHistory.slice() : [];
+        hist.push(now.toISOString());
+        const n = hist.length;
+        const delta = (n === 1) ? 3 : (n === 2) ? 7 : 14;
+        const next = addDays(startOfDay(now), delta);
+        return { ...e, reviewHistory: hist, nextReviewAt: next.toISOString() };
+      });
+    }
+    default: return errors;
+  }
+}
+
+function analyzeTrapPayload(p){
+  const now = Date.now();
+  const text = (p.text||"").trim();
+  const fix = (p.fix||"").trim();
+
+  const hasNeg = /não|nunca|exceto|salvo|apenas|somente|incorreta|errada/i.test(text);
+  const hasQuant = /\bsempre\b|\bnunca\b|\bapenas\b|\bsomente\b|\bexclusivamente\b/i.test(text);
+  const hasPegWords = /pegadinh|armadilh|induz|confund|sutil|literal|princípi|conceit/i.test(text);
+  const lengthScore = Math.min(1, text.length/800);
+
+  let danger = 35;
+  danger += hasNeg ? 15 : 0;
+  danger += hasQuant ? 15 : 0;
+  danger += hasPegWords ? 10 : 0;
+  danger += Math.round(25*lengthScore);
+  danger = Math.max(10, Math.min(98, danger));
+
+  const typical = [];
+  if(hasNeg) typical.push("Negação/EXCETO");
+  if(hasQuant) typical.push("Absolutismo (sempre/nunca)");
+  if(/conceito|definição|natureza|distinção/i.test(text)) typical.push("Conceitual (distinções finas)");
+  if(/competên|prazo|recurso|cabimento|efeitos/i.test(text)) typical.push("Processual (prazo/cabimento/efeitos)");
+  if(/princípi|regra|exceç|requisit|elemento|atributo/i.test(text)) typical.push("Requisitos/Exceções");
+  if(typical.length===0) typical.push("Leitura literal x contexto");
+
+  const trainPlan = [];
+  if(hasNeg) trainPlan.push("Sublinhar NEGATIVOS e inverter mentalmente");
+  if(hasQuant) trainPlan.push("Procurar exceções (sempre/nunca = quase sempre falso)");
+  trainPlan.push("Reescrever a assertiva em 1 frase simples");
+  trainPlan.push("Provar o contrário com 1 exemplo");
+  if(!fix) trainPlan.push("Escrever a correção (qual detalhe muda o gabarito)");
+
+  return sanitizeTrap({
+    id: uid(),
+    createdAt: new Date(now).toISOString(),
+    disc: p.disc || "",
+    topic: p.topic || "",
+    bank: p.bank || "AUTO",
+    type: p.type || "Ambígua/dupla interpretação",
+    text,
+    fix,
+    danger,
+    typical,
+    trainPlan
+  });
+}
+
+function trapsReducer(slice, action, fullState){
+  const traps = Array.isArray(slice) ? slice : [];
+  switch(action.type){
+    case A.TRAP_ADD:{
+      const t = sanitizeTrap(action.payload);
+      const next = [t, ...traps].slice(0, 500);
+      return next;
+    }
+    case A.TRAP_DELETE:{
+      const id = safeString(action.id);
+      return traps.filter(t => t.id !== id);
+    }
+    default:
+      return traps;
+  }
+}
+
+
+function questionsReducer(slice, action){
+  const qs = Array.isArray(slice) ? slice : [];
+  switch(action.type){
+    case A.Q_ADD:{
+      const q = sanitizeQuestion(action.payload);
+      return [q, ...qs].slice(0, 5000);
+    }
+    case A.Q_DELETE:{
+      const id = safeString(action.id);
+      return qs.filter(x => x.id !== id);
+    }
+    default:
+      return qs;
+  }
+}
+
+function advSimReducer(slice, action, fullState){
+  const s = slice && typeof slice === "object" ? slice : null;
+  switch(action.type){
+    case A.TRAP_SIM_START:{
+      const pool = Array.isArray(fullState.traps) ? fullState.traps : [];
+      if(pool.length < 3) return { error:"MIN_3" };
+      const sample = shuffle(pool.slice()).slice(0, Math.min(10, pool.length));
+      return { startedAt: Date.now(), items: sample, idx: 0, right: 0, wrong: 0, done:false };
+    }
+    case A.TRAP_SIM_ANSWER:{
+      if(!s || s.error) return s;
+      if(s.done) return s;
+      const correct = !!action.correct;
+      const idx = s.idx;
+      const right = s.right + (correct ? 1 : 0);
+      const wrong = s.wrong + (correct ? 0 : 1);
+      const nextIdx = idx + 1;
+      const done = nextIdx >= s.items.length;
+      return { ...s, idx: nextIdx, right, wrong, done };
+    }
+    case A.TRAP_SIM_END:
+      return null;
+    default:
+      return s;
+  }
+}
+
+function rootReducer(state, action){
+  if(action.type === A.STATE_IMPORT) return migrate(action.payload);
+  if(action.type === A.STATE_RESET) return migrate({ version: STATE_VERSION, errors: [], traps: [], questions: [], advSim: null });
+
+  const next = {
+    ...state,
+    errors: errorsReducer(state.errors, action),
+    traps: trapsReducer(state.traps, action, state),
+    questions: questionsReducer(state.questions, action),
+    advSim: advSimReducer(state.advSim, action, state),
+  };
+  return next;
+}
+
+/* =========================
+   SELECTORS
+========================= */
+
+function selectKpis(state){
+  const errors = filterByExam(state.errors || []);
+  const today0 = startOfDay(new Date());
+  const tomorrow0 = addDays(today0, 1);
+  const in7 = addDays(today0, 7);
+
+  let overdue = 0, dueToday = 0, due7 = 0, noSchedule = 0;
+
+  for(const e of errors){
+    if(!e.nextReviewAt){ noSchedule++; continue; }
+    const d = new Date(e.nextReviewAt);
+    if(Number.isNaN(d.getTime())) { noSchedule++; continue; }
+    if(d < today0) overdue++;
+    else if(d >= today0 && d < tomorrow0) dueToday++;
+    else if(d >= tomorrow0 && d < in7) due7++;
+  }
+  const trapsCount = Array.isArray(state.traps) ? state.traps.length : 0;
+  const qCount = Array.isArray(state.questions) ? state.questions.length : 0;
+  const answered = (state.questions||[]).filter(q=> q.isCorrect !== null).length;
+  const correct = (state.questions||[]).filter(q=> q.isCorrect === true).length;
+  const acc = answered ? Math.round((correct/answered)*100) : 0;
+  return { totalErrors: errors.length, overdue, dueToday, due7, noSchedule, trapsCount, qCount, answered, correct, acc };
+}
+
+function selectScheduleBuckets(state){
+  const errors = filterByExam(state.errors || []);
+  const today0 = startOfDay(new Date());
+  const tomorrow0 = addDays(today0, 1);
+  const weekEnd0 = addDays(today0, 7);
+
+  const overdue = [];
+  const today = [];
+  const week = {};
+  const backlog = [];
+
+  for(const e of errors){
+    if(!e.nextReviewAt){ backlog.push(e); continue; }
+    const d = new Date(e.nextReviewAt);
+    if(Number.isNaN(d.getTime())) { backlog.push(e); continue; }
+
+    if(d < today0) overdue.push(e);
+    else if(d >= today0 && d < tomorrow0) today.push(e);
+    else if(d >= tomorrow0 && d < weekEnd0){
+      const key = startOfDay(d).toISOString();
+      (week[key] ||= []).push(e);
+    } else {
+      // fora da janela de 7 dias: ignoramos por enquanto
+    }
+  }
+
+  overdue.sort((a,b)=> new Date(a.nextReviewAt) - new Date(b.nextReviewAt));
+  today.sort((a,b)=> new Date(a.nextReviewAt) - new Date(b.nextReviewAt));
+  for(const k of Object.keys(week)) week[k].sort((a,b)=> new Date(a.nextReviewAt) - new Date(b.nextReviewAt));
+  backlog.sort((a,b)=> new Date(a.createdAt) - new Date(b.createdAt));
+
+  return { overdue, today, week, backlog };
+}
+
+
+/* =========================================================
+   MODULE: engine/adaptive-weights
+   ========================================================= */
+function __tsFromAny(x){
+  const v = x && (x.createdAt || x.ts || x.date || x.time);
+  if(!v) return null;
+  const d = new Date(v);
+  if(Number.isNaN(d.getTime())) return null;
+  return d.getTime();
+}
+function __withinDays(list, days){
+  const now = Date.now();
+  const cutoff = now - (days*24*60*60*1000);
+  const withTs = list.filter(it=> __tsFromAny(it) !== null);
+  if(withTs.length >= 5){
+    return withTs.filter(it=> __tsFromAny(it) >= cutoff);
+  }
+  // fallback: treat "recent" as slice (newest first)
+  return list.slice(0, Math.min(list.length, 250));
+}
+
+
+function sampleWeightedDisc(state){
+  const wmap = computeDisciplineWeightMap(state);
+  const entries = Array.from(wmap.entries()).filter(([k,v])=>k && Number.isFinite(v));
+  if(!entries.length) return "(sem disciplina)";
+  const total = entries.reduce((s,[,w])=>s+w,0) || 1;
+  let r = Math.random()*total;
+  for(const [k,w] of entries){
+    r -= w;
+    if(r<=0) return k;
+  }
+  return entries[0][0];
+}
+
+function filterByExam(list){
+  const active = getActiveExam();
+  if(!Array.isArray(list)) return [];
+  return list.filter(x => x.examId === active);
+}
+
+function computeAdaptiveDisciplinePlan(state){
+  const questions = filterByExam(state.questions || []);
+  const errors = filterByExam(state.errors || []);
+  const traps = filterByExam(state.traps || []);
+
+  function discKey(d){ return (d||"(sem disciplina)").trim() || "(sem disciplina)"; }
+  function ensure(map, d){
+    const k = discKey(d);
+    if(!map.has(k)) map.set(k, { disc:k, qAns:0, qRight:0, qWrong:0, errors:0, overdue:0, traps:0 });
+    return map.get(k);
+  }
+
+  const discMap = new Map();
+  for(const q of questions){
+    const row = ensure(discMap, q.disc);
+    if(q.isCorrect === null) continue;
+    row.qAns++;
+    if(q.isCorrect) row.qRight++; else row.qWrong++;
+  }
+  const today0 = startOfDay(new Date());
+  for(const e of errors){
+    const row = ensure(discMap, e.disc);
+    row.errors++;
+    if(e.nextReviewAt){
+      const d = new Date(e.nextReviewAt);
+      if(!Number.isNaN(d.getTime()) && d < today0) row.overdue++;
+    }
+  }
+  for(const t of traps){
+    const row = ensure(discMap, t.disc);
+    row.traps++;
+  }
+
+  const heatRows = Array.from(discMap.values()).map(r=>{
+    const acc = r.qAns ? Math.round((r.qRight/r.qAns)*100) : 0;
+    const risk = (r.overdue*3) + (r.qWrong*2) + (r.errors) + Math.round(r.traps*1.2);
+    return { ...r, acc, risk };
+  }).sort((a,b)=> (b.risk - a.risk) || (a.acc - b.acc));
+
+  const answeredAll = (questions||[]).filter(q=> q.isCorrect !== null);
+  const answeredRecent = __withinDays(answeredAll, 14);
+
+  const baseWeekGoal = Math.max(20, Math.round(answeredAll.length * 0.15));
+
+  // pick focus disciplines
+  const focus = heatRows.filter(r=> r.disc !== "(sem disciplina)").slice(0,4);
+  const totalRisk = focus.reduce((s,r)=> s + Math.max(1,r.risk), 0) || 1;
+
+  function recentCount(disc){
+    const k = discKey(disc);
+    return answeredRecent.filter(q=> discKey(q.disc) === k).length;
+  }
+
+  const plan = focus.map(r=>{
+    const w = Math.max(1,r.risk)/totalRisk;
+    let goal = Math.max(3, Math.round(baseWeekGoal*w));
+    const done = recentCount(r.disc);
+    return { disc:r.disc, goal, done, risk:r.risk, acc:r.acc, overdue:r.overdue, wrong:r.qWrong };
+  });
+
+  // scale to keep totals reasonable
+  const sumGoals = plan.reduce((s,x)=> s + x.goal, 0);
+  const maxTotal = Math.round(baseWeekGoal * 1.2);
+  const scale = sumGoals > maxTotal ? (maxTotal/sumGoals) : 1;
+  for(const g of plan){
+    if(scale !== 1) g.goal = Math.max(2, Math.round(g.goal*scale));
+  }
+
+  // discipline trend (last10 vs prev10 per discipline, using newest-first ordering)
+  const answeredByDisc = new Map();
+  for(const q of answeredAll){
+    const k = discKey(q.disc);
+    if(!answeredByDisc.has(k)) answeredByDisc.set(k, []);
+    answeredByDisc.get(k).push(q);
+  }
+  function acc(list){
+    if(!list.length) return 0;
+    const right = list.filter(q=> q.isCorrect).length;
+    return Math.round((right/list.length)*100);
+  }
+  for(const g of plan){
+    const arr = answeredByDisc.get(discKey(g.disc)) || [];
+    const last10 = arr.slice(0,10);
+    const prev10 = arr.slice(10,20);
+    g.trend = acc(last10) - acc(prev10);
+  }
+
+  return { baseWeekGoal, answeredRecentCount: answeredRecent.length, heatRows, plan };
+}
+
+function computeDisciplineWeightMap(state){
+  const { plan, heatRows } = computeAdaptiveDisciplinePlan(state);
+  const weight = new Map();
+
+  // baseline risk average for normalization
+  const avgRisk = heatRows.length ? (heatRows.reduce((s,r)=> s + Math.max(0,r.risk),0) / heatRows.length) : 1;
+
+  function discKey(d){ return (d||"(sem disciplina)").trim() || "(sem disciplina)"; }
+
+  // default weights for all known disciplines
+  for(const r of heatRows){
+    const k = discKey(r.disc);
+    // mild risk factor everywhere (keeps behavior stable)
+    const riskFactor = avgRisk ? Math.min(1.0, Math.max(0, r.risk) / (avgRisk*2)) : 0;
+    weight.set(k, 1 + (riskFactor*0.35));
+  }
+
+  // boost focus plan disciplines
+  for(const g of plan){
+    const k = discKey(g.disc);
+    const base = weight.get(k) || 1;
+    const behind = g.goal ? Math.max(0, 1 - (g.done / g.goal)) : 0; // 0..1
+    const ag = getAggro();
+    const ahead = g.goal && g.done >= g.goal;
+    const trendPenalty = g.trend < 0 ? (0.25 * ag) : 0;
+
+    let w = base;
+    w += Math.min(0.9*ag, behind * (0.9*ag));     // scaled by aggressiveness
+    w += trendPenalty;                     // +0.25 if trend negative
+    if(ahead) w *= (1 - (0.22*ag));              // downweight if already met goal (scaled)
+
+    // clamp for stability
+    w = Math.max(0.6, Math.min(2.6, w));
+    weight.set(k, w);
+  }
+
+  return weight;
+}
+function explainDisciplineWeight(state, disc){
+  const { plan, heatRows } = computeAdaptiveDisciplinePlan(state);
+  const discKey = (d)=> (d||"(sem disciplina)").trim() || "(sem disciplina)";
+  const key = discKey(disc);
+  const ag = getAggro();
+
+  const row = heatRows.find(r=> discKey(r.disc) === key) || { disc:key, risk:0, acc:0, overdue:0, qWrong:0, errors:0, traps:0 };
+  const planRow = plan.find(p=> discKey(p.disc) === key) || null;
+
+  // baseline
+  const avgRisk = heatRows.length ? (heatRows.reduce((s,r)=> s + Math.max(0,r.risk),0) / heatRows.length) : 1;
+  const riskFactor = avgRisk ? Math.min(1.0, Math.max(0, row.risk) / (avgRisk*2)) : 0;
+  const base = 1 + (riskFactor*0.35);
+
+  let deltaBehind = 0, deltaTrend = 0, multAhead = 1;
+
+  if(planRow){
+    const behind = planRow.goal ? Math.max(0, 1 - (planRow.done/planRow.goal)) : 0;
+    deltaBehind = Math.min(0.9*ag, behind*(0.9*ag));
+    deltaTrend = (planRow.trend < 0) ? (0.25*ag) : 0;
+    const ahead = planRow.goal && planRow.done >= planRow.goal;
+    if(ahead) multAhead = (1 - (0.22*ag));
+  }
+
+  let w = (base + deltaBehind + deltaTrend) * multAhead;
+  w = Math.max(0.6, Math.min(2.6, w));
+
+  // Build explanation lines
+  const lines = [];
+  lines.push({ label:"Base (risco relativo)", value: base, detail:`risco:${row.risk} • média~${Math.round(avgRisk||0)}` });
+  if(planRow){
+    lines.push({ label:"Meta atrasada", value: deltaBehind, detail:`feito:${planRow.done}/${planRow.goal}` });
+    lines.push({ label:"Tendência", value: deltaTrend, detail:`trend:${planRow.trend>0?"+":""}${planRow.trend}%` });
+    if(multAhead !== 1) lines.push({ label:"Meta batida (redução)", value: (multAhead-1), detail:`x${multAhead.toFixed(2)}` });
+  }else{
+    lines.push({ label:"Meta adaptativa", value: 0, detail:"disciplina fora do top 4 (sem boost)" });
+  }
+
+  return {
+    disc: key,
+    weight: w,
+    aggro: ag,
+    metrics: { risk: row.risk, acc: row.acc, overdue: row.overdue, wrong: row.qWrong, errors: row.errors, traps: row.traps },
+    planInfo: planRow ? { goal: planRow.goal, done: planRow.done, trend: planRow.trend } : null,
+    lines
+  };
+}
+
+
+function selectReviewQueue(state, limit=6){
+  const now = new Date();
+  const today0 = startOfDay(now);
+  const tomorrow0 = addDays(today0, 1);
+
+  const errors = Array.isArray(state.errors) ? state.errors : [];
+  const traps  = Array.isArray(state.traps) ? state.traps : [];
+  const questions = Array.isArray(state.questions) ? state.questions : [];
+
+  // compute topic accuracy map from questions
+  const accMap = new Map(); // key: disc||topic -> {ans,right}
+  function key(d,t){ return (d||"").trim()+"||"+(t||"").trim(); }
+  for(const q of questions){
+    if(q.isCorrect === null) continue;
+    const k = key(q.disc, q.topic);
+    const obj = accMap.get(k) || { ans:0, right:0 };
+    obj.ans += 1;
+    if(q.isCorrect) obj.right += 1;
+    accMap.set(k, obj);
+  }
+  function topicAcc(d,t){
+    const o = accMap.get(key(d,t));
+    if(!o || !o.ans) return null;
+    return Math.round((o.right/o.ans)*100);
+  }
+
+  const items = [];
+
+  // Errors scoring
+  for(const e of errors){
+    let score = 0;
+    const nrev = Array.isArray(e.reviewHistory) ? e.reviewHistory.length : 0;
+    score += Math.min(40, nrev * 10);
+
+    if(e.nextReviewAt){
+      const d = new Date(e.nextReviewAt);
+      if(!Number.isNaN(d.getTime())){
+        if(d < today0) score += 60;
+        else if(d >= today0 && d < tomorrow0) score += 45;
+        else score += 10;
+      } else score += 5;
+    } else {
+      score += 15; // no schedule
+    }
+
+    const acc = topicAcc(e.disc, e.topic);
+    if(acc !== null){
+      if(acc < 50) score += 25;
+      else if(acc < 70) score += 15;
+      else if(acc < 85) score += 8;
+    } else {
+      score += 5;
+    }
+
+    items.push({ kind:"error", id:e.id, disc:e.disc, topic:e.topic, bank:e.bank, score, meta:e });
+  }
+
+  // Traps scoring (danger + mild boost for common low-acc topics)
+  for(const t of traps){
+    let score = 0;
+    const danger = Number(t.danger || 0);
+    score += Math.min(80, danger);
+    const acc = topicAcc(t.disc, t.topic);
+    if(acc !== null && acc < 70) score += 10;
+    items.push({ kind:"trap", id:t.id, disc:t.disc, topic:t.topic, bank:t.bank, score, meta:t });
+  }
+
+  for(const it of items){
+    const k = (it.disc||"(sem disciplina)").trim() || "(sem disciplina)";
+    const w = getDiscWeight(getActiveExam(), k) || 1;
+    it.score = Math.round(it.score * w);
+  }
+  items.sort((a,b)=> b.score - a.score);
+  return items.slice(0, Math.max(1, limit));
+}
+
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/* =========================
+   UI Router + Views
+========================= */
+
+const store = createStore({ initialState: loadState(), reducer: rootReducer });
+const app = document.getElementById("app");
+
+const fatalBanner = document.getElementById("fatalBanner");
+function showFatal(err, context){
+  try{
+    const msg = (err && err.message) ? err.message : String(err || "Erro desconhecido");
+    const stack = (err && err.stack) ? err.stack : "";
+    fatalBanner.style.display = "block";
+    fatalBanner.innerHTML = `
+      <div>⚠️ O SAPE encontrou um erro e interrompeu esta tela.</div>
+      <div class="tiny">Contexto: ${escapeHtml(context||"-")}</div>
+      <code>${escapeHtml(msg + (stack ? "\n\n" + stack : ""))}</code>
+      <div class="actions">
+        <button class="btn" id="fatalReload">Recarregar</button>
+        <button class="btn" id="fatalExport">Backup (exportar)</button>
+      </div>
+      <div class="tiny">Dica: se ocorrer de novo, me envie um print do console + esta mensagem.</div>
+    `;
+    const r = document.getElementById("fatalReload");
+    if(r) r.onclick = ()=> toast('Concurso ativo: ' + (EXAMS[sel.value]?.name || sel.value)); go('dashboard');
+    const e = document.getElementById("fatalExport");
+    if(e) e.onclick = ()=>{
+      try{
+        const data = JSON.stringify(store.getState(), null, 2);
+        const blob = new Blob([data], {type:"application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = "SAPE_backup.json";
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url), 3000);
+      }catch(ex){ alert("Não foi possível exportar: " + ex); }
+    };
+  }catch(_){}
+}
+window.addEventListener("error", (ev)=>{
+  // avoid infinite loop
+  if(ev && ev.error) showFatal(ev.error, "window.error");
+});
+window.addEventListener("unhandledrejection", (ev)=>{
+  const reason = ev && ev.reason ? ev.reason : new Error("Promise rejeitada sem reason");
+  showFatal(reason, "unhandledrejection");
+});
+
+function safeCall(fn, context){
+  try{ return fn(); }
+  catch(err){ showFatal(err, context); return ()=>{}; }
+}
+
+/* =========================================================
+   MODULE: core/debug
+   ========================================================= */
+function isDebug(){
+  try{ return localStorage.getItem(DEBUG_KEY) === "1"; }catch{ return false; }
+}
+function setDebug(v){
+  try{ localStorage.setItem(DEBUG_KEY, v ? "1" : "0"); }catch{}
+}
+
+function getAggro(){
+  try{
+    const v = Number(localStorage.getItem(AGGRO_KEY));
+    if(!Number.isFinite(v)) return 1.0;
+    return Math.max(0.5, Math.min(1.5, v));
+  }catch{ return 1.0; }
+}
+function setAggro(v){
+  try{ localStorage.setItem(AGGRO_KEY, String(v)); }catch{}
+}
+function dlog(...args){ if(isDebug()) console.log("[SAPE]", ...args); }
+function dwarn(...args){ if(isDebug()) console.warn("[SAPE]", ...args); }
+function invariant(cond, msg){
+  if(!cond) throw new Error("Invariant failed: " + (msg || "(no message)"));
+}
+
+let currentTab = "dashboard";
+let currentUnmount = null;
+
+document.querySelectorAll(".tab").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    go(btn.dataset.tab);
+  }, { passive:true });
+});
+
+function go(tab){
+  currentTab = tab;
+  if(typeof currentUnmount === "function") currentUnmount();
+  if(tab === "dashboard") currentUnmount = safeCall(()=>mountDashboard(), "mountDashboard");
+  else if(tab === "errors") currentUnmount = safeCall(()=>mountErrors(), "mountErrors");
+  else if(tab === "schedule") currentUnmount = safeCall(()=>mountSchedule(), "mountSchedule");
+  else if(tab === "traps") currentUnmount = safeCall(()=>mountTraps(), "mountTraps");
+  else if(tab === "sim") currentUnmount = safeCall(()=>mountSim(), "mountSim");
+  else if(tab === "compare") currentUnmount = safeCall(()=>mountCompare(), "mountCompare");
+  else if(tab === "questions") currentUnmount = safeCall(()=>mountQuestions(), "mountQuestions");
+  else if(tab === "settings") currentUnmount = safeCall(()=>mountSettings(), "mountSettings");
+  else currentUnmount = safeCall(()=>mountDashboard(), "mountDashboard");
+}
+
+/* =========================================================
+   MODULE: engine/recommendations
+   ========================================================= */
+function recommendNextActions(state, disc){
+  const ex = explainDisciplineWeight(state, disc);
+  const actions = [];
+
+  // Suggested questions volume
+  if(ex.planInfo){
+    const remaining = Math.max(0, (ex.planInfo.goal||0) - (ex.planInfo.done||0));
+    if(remaining > 0){
+      const q = Math.min(20, Math.max(6, Math.round(remaining * 0.6)));
+      actions.push({ title: `Fazer ${q} questões`, detail: `Para reduzir o atraso da meta (${ex.planInfo.done}/${ex.planInfo.goal}).` });
+    }else{
+      actions.push({ title: "Manter com 6 questões", detail: "Meta batida — só manutenção para não esfriar." });
+    }
+    if(ex.planInfo.trend < 0){
+      actions.push({ title: "Revisar o assunto que mais erra", detail: "Tendência negativa: refazer 1 bloco de teoria + 5 questões." });
+    }
+  }else{
+    actions.push({ title: "Fazer 10 questões", detail: "Disciplina fora do top 4 — use para alimentar dados e detectar risco." });
+  }
+
+  // Suggested error reviews (based on overdue/errors)
+  const overdue = ex.metrics.overdue || 0;
+  const errs = ex.metrics.errors || 0;
+  if(overdue > 0){
+    actions.push({ title: `Revisar ${Math.min(3, overdue)} erros atrasados`, detail: "Prioridade alta: atraso vira perda de ponto." });
+  }else if(errs > 0){
+    actions.push({ title: "Revisar 1–2 erros recentes", detail: "Consolida acerto antes de acumular." });
+  }
+
+  // Traps
+  if((ex.metrics.traps||0) < 3){
+    actions.push({ title: "Salvar 2 pegadinhas", detail: "Aumenta seu “radar” e melhora o treino." });
+  }else{
+    actions.push({ title: "Rodar 1 treino de pegadinhas", detail: "10 itens rápidos para ganhar segurança." });
+  }
+
+  return { ex, actions: actions.slice(0,3) };
+}
+function mountDashboard(){
+  let focusIdx = 0;
+
+  function render(){
+    const state = store.getState();
+    const k = selectKpis(state);
+    const questions = filterByExam(state.questions || []);
+    const errors = filterByExam(state.errors || []);
+    const traps = filterByExam(state.traps || []);
+    const queue = selectReviewQueue(state, 12);
+
+    if(focusIdx >= queue.length) focusIdx = 0;
+
+    // --- tendência simples (últimas 10 vs anteriores 10 questões respondidas)
+    const answered = (questions||[]).filter(q=> q.isCorrect !== null);
+    const last10 = answered.slice(0,10);
+    const prev10 = answered.slice(10,20);
+
+    function acc(list){
+      if(!list.length) return 0;
+      const right = list.filter(q=> q.isCorrect).length;
+      return Math.round((right/list.length)*100);
+    }
+    const accLast = acc(last10);
+    const accPrev = acc(prev10);
+    const trend = accLast - accPrev;
+
+    // --- tempo médio por questão
+    const withTime = answered.filter(q=> q.timeMin);
+    const avgTime = withTime.length 
+      ? Math.round(withTime.reduce((a,b)=>a + Number(b.timeMin||0),0)/withTime.length)
+      : 0;
+
+    // --- meta semanal automática
+    const weekGoal = Math.max(20, Math.round(answered.length * 0.15));
+    const weekProgress = Math.min(answered.length, weekGoal);
+
+    // heatmap per discipline (from questions + errors + traps)
+    const discMap = new Map();
+    function discKey(d){ return (d||"(sem disciplina)").trim() || "(sem disciplina)"; }
+    function ensureDisc(d){
+      const key = discKey(d);
+      if(!discMap.has(key)) discMap.set(key, { disc:key, qAns:0, qRight:0, qWrong:0, errors:0, overdue:0, traps:0 });
+      return discMap.get(key);
+    }
+    for(const q of questions){
+      const row = ensureDisc(q.disc);
+      if(q.isCorrect === null) continue;
+      row.qAns++;
+      if(q.isCorrect) row.qRight++; else row.qWrong++;
+    }
+    const today0 = startOfDay(new Date());
+    for(const e of errors){
+      const row = ensureDisc(e.disc);
+      row.errors++;
+      if(e.nextReviewAt){
+        const d = new Date(e.nextReviewAt);
+        if(!Number.isNaN(d.getTime()) && d < today0) row.overdue++;
+      }
+    }
+    for(const t of traps){
+      const row = ensureDisc(t.disc);
+      row.traps++;
+    }
+
+    const heatRows = Array.from(discMap.values()).map(r=>{
+      const a = r.qAns ? Math.round((r.qRight/r.qAns)*100) : 0;
+      const risk = (r.overdue*3) + (r.qWrong*2) + (r.errors) + Math.round(r.traps*1.2);
+      return { ...r, acc:a, risk };
+    }).sort((a,b)=> (b.risk - a.risk) || (a.acc - b.acc));
+
+    // --- metas adaptativas por disciplina (distribui a meta semanal pelo risco/baixa acurácia)
+    const goalRows = (()=>{
+      const total = weekGoal;
+      const rows = heatRows
+        .filter(r=> r.disc && r.disc !== "(sem disciplina)")
+        .slice(0, 12);
+
+      if(!rows.length){
+        return { total, items: [], critical:null, stable:null, ok:null };
+      }
+
+      // peso = risco (mín.1) + penalidade por baixa acurácia
+      const weights = rows.map(r=>{
+        const risk = Math.max(1, Number(r.risk||0));
+        const accPenalty = Math.max(0, 100 - Number(r.acc||0)); // 0..100
+        const baseW = risk + Math.round(accPenalty * 0.5); // acurácia pesa 50%
+        const w = baseW * getDiscWeight(activeExam, r.disc);
+        return { disc:r.disc, risk, acc:r.acc, w, baseW };
+      });
+
+      const sumW = weights.reduce((a,b)=>a+b.w,0) || 1;
+
+      // alocação inicial arredondada
+      let items = weights.map(x=>{
+        const raw = (x.w / sumW) * total;
+        return { ...x, goal: Math.max(0, Math.round(raw)) };
+      });
+
+      // ajuste para bater exatamente total (corrige erros de arredondamento)
+      let diff = total - items.reduce((a,b)=>a+b.goal,0);
+      // ordenar por maior peso para distribuir diff
+      items.sort((a,b)=> b.w - a.w);
+      let idx2 = 0;
+      while(diff !== 0 && items.length){
+        if(diff > 0){
+          items[idx2 % items.length].goal += 1;
+          diff -= 1;
+        }else if(diff < 0){
+          // tirar de quem tem mais meta, sem zerar
+          const j = idx2 % items.length;
+          if(items[j].goal > 0){
+            items[j].goal -= 1;
+            diff += 1;
+          }
+        }
+        idx2++;
+        if(idx2 > 5000) break; // safety
+      }
+
+      // classificar "crítica / estável / sob controle"
+      const sortedRisk = [...items].sort((a,b)=> (b.risk - a.risk) || (a.acc - b.acc));
+      const critical = sortedRisk[0] || null;
+      const ok = [...items].sort((a,b)=> (b.acc - a.acc) || (a.risk - b.risk))[0] || null;
+      const stable = sortedRisk[Math.min(sortedRisk.length-1, Math.floor(sortedRisk.length/2))] || null;
+
+      // voltar para exibição por risco
+      items = sortedRisk;
+
+      return { total, items, critical, stable, ok };
+    })();
+
+
+    const focusItem = queue[focusIdx] || null;
+
+    app.innerHTML = `
+      <div class="card">
+        
+        <div class="statcard" style="margin-bottom:16px;">
+          <div class="h">Concurso ativo</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap;">
+            <select id="examSelector" class="input">
+              ${Object.entries(EXAMS).map(([id,ex]) =>
+                `<option value="${id}" ${getActiveExam()===id?'selected':''}>${ex.name}</option>`
+              ).join("")}
+            </select>
+            <span class="badge">🎯 ${EXAMS[getActiveExam()].name}</span>
+          </div>
+        </div>
+    
+        <div class="section-title">
+          <h2>Dashboard Estratégico</h2>
+          <span class="pill">Estado: <b>V${state.version}</b></span>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi lav"><div class="n">${k.totalErrors}</div><div class="t">Erros</div></div>
+          <div class="kpi pink"><div class="n">${k.overdue}</div><div class="t">Atrasadas</div></div>
+          <div class="kpi yellow"><div class="n">${avgTime || 0}m</div><div class="t">Tempo médio</div></div>
+          <div class="kpi blue"><div class="n">${k.acc || 0}%</div><div class="t">Acurácia</div></div>
+          <div class="kpi"><div class="n">${trend>0?"+":""}${trend}%</div><div class="t">Tendência</div></div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="statcard">
+          <div class="h">Meta semanal automática</div>
+          <div class="v">${weekProgress}/${weekGoal} questões</div>
+          <div class="bar" style="margin-top:8px;">
+            <div style="width:${Math.min(100,Math.round((weekProgress/weekGoal)*100))}%;"></div>
+          </div>
+          <div class="tiny muted" style="margin-top:8px;">
+            Meta baseada em ~15% do seu volume total atual (mínimo 20).
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+
+        <details open class="compact">
+          <summary><span>Metas adaptativas por disciplina (semana)</span><span class="chev">⌄</span></summary>
+          <div style="margin-top:10px;">
+            ${goalRows.items.length ? `
+              <div class="note">
+                <div class="tiny muted"><b>Crítica:</b> ${escapeHtml(goalRows.critical?.disc || "-")} • <b>Estável:</b> ${escapeHtml(goalRows.stable?.disc || "-")} • <b>Sob controle:</b> ${escapeHtml(goalRows.ok?.disc || "-")}</div>
+                <div class="tiny muted">Distribuição baseada em risco + baixa acurácia. (Ajusta automaticamente conforme você registra questões/erros.)</div>
+              </div>
+
+              <table style="margin-top:10px;">
+                <thead><tr><th>Disciplina</th><th>Meta</th><th>Risco</th><th>Acurácia</th></tr></thead>
+                <tbody>
+                  ${goalRows.items.map(r=>`
+                    <tr>
+                      <td><b>${escapeHtml(r.disc)}</b></td>
+                      <td><span class="badge overdue">${r.goal}</span></td>
+                      <td><span class="badge">${r.risk}</span></td>
+                      <td>
+                        <span class="badge">${r.acc}%</span>
+                        <div class="bar" style="margin-top:6px;"><div style="width:${r.acc}%;"></div></div>
+                      </td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            ` : `<div class="note">Registre questões/erros para o sistema calcular metas por disciplina.</div>`}
+          </div>
+        </details>
+
+        <div class="hr"></div>
+
+        <div class="section-title">
+          <h3>Revisar agora</h3>
+          <span class="pill">Fila: <b>${queue.length}</b></span>
+        </div>
+        <div class="note">Prioridade inteligente: atrasos/hoje + reincidência + baixa acurácia + perigo.</div>
+
+        <details open class="compact">
+          <summary><span>Modo foco (1 por vez)</span><span class="chev">⌄</span></summary>
+          <div style="margin-top:10px;">
+            ${focusItem ? `
+              <div class="statcard" style="background:var(--card);">
+                <div class="h">Item ${focusIdx+1}/${queue.length}</div>
+                <div class="v" style="font-size:16px;margin-top:8px;">
+                  ${focusItem.kind === "error" ? `<span class="badge overdue">erro</span>` : `<span class="badge">trap</span>`}
+                  <span style="margin-left:8px;"><b>${escapeHtml(focusItem.disc || "(sem disciplina)")}</b></span>
+                </div>
+                <div class="tiny muted" style="margin-top:6px;">${escapeHtml(focusItem.topic || "(sem assunto)")}</div>
+                <div class="tiny muted">banca: ${escapeHtml(focusItem.bank || "-")} • score: ${Math.round(focusItem.score)}</div>
+
+                ${focusItem.kind === "error" && focusItem.meta ? `
+                  <div class="note" style="margin-top:10px;">
+                    <div class="tiny muted"><b>Causa:</b> ${escapeHtml(focusItem.meta.cause || "-")}</div>
+                    ${focusItem.meta.notes ? `<div class="tiny muted" style="margin-top:6px;"><b>Notas:</b><br>${escapeHtml(focusItem.meta.notes)}</div>` : ""}
+                  </div>
+                ` : ""}
+
+                ${focusItem.kind === "error" ? (()=>{
+                  const qs = (state.questions||[]).filter(q=> 
+                    (q.disc||"").trim() === (focusItem.disc||"").trim() &&
+                    (q.topic||"").trim() === (focusItem.topic||"").trim()
+                  );
+                  if(!qs.length) return "";
+                  const last = qs.slice(0,3);
+                  return `<div class="note" style="margin-top:10px;">
+                    <div class="tiny muted"><b>Questões recentes do mesmo assunto:</b></div>
+                    ${last.map(q=>`
+                      <div class="tiny muted" style="margin-top:4px;">
+                        ${q.isCorrect===true?"✓":q.isCorrect===false?"✗":"•"} 
+                        ${escapeHtml(q.source||"sem fonte")}
+                      </div>
+                    `).join("")}
+                  </div>`;
+                })() : ""}
+
+                <div class="btnbar" style="margin-top:12px;">
+                  ${focusItem.kind === "error" ? `
+                    <button class="btn primary" data-act="focusReviewed" data-id="${focusItem.id}">Marcar revisado ✓</button>
+                    <button class="btn" data-act="focusToSchedule">Abrir cronograma</button>
+                  ` : `
+                    <button class="btn primary" data-act="focusOpenTrap" data-id="${focusItem.id}">Abrir pegadinha</button>
+                    <button class="btn" data-act="focusStartSim">Treino (10)</button>
+                  `}
+                  <button class="btn" data-act="focusNext">Próximo →</button>
+                </div>
+              </div>
+            ` : `<div class="note">Sem itens suficientes ainda.</div>`}
+          </div>
+        </details>
+
+        <div class="hr"></div>
+
+        <details class="compact">
+          <summary><span>Fila completa (top 12)</span><span class="chev">⌄</span></summary>
+          <div style="margin-top:10px;">
+            ${queue.length ? `
+              <table>
+                <thead><tr><th>Tipo</th><th>Item</th><th>Score</th><th>Ações</th></tr></thead>
+                <tbody>
+                  ${queue.map(it=>`
+                    <tr>
+                      <td>${it.kind === "error" ? `<span class="badge overdue">erro</span>` : `<span class="badge">trap</span>`}</td>
+                      <td>
+                        <div><b>${escapeHtml(it.disc || "(sem disciplina)")}</b></div>
+                        <div class="tiny muted">${escapeHtml(it.topic || "(sem assunto)")}</div>
+                      </td>
+                      <td><span class="badge">${Math.round(it.score)}</span></td>
+                      <td>
+                        <div class="actions">
+                          ${it.kind === "error" ? `
+                            <button class="btn" data-act="revNow" data-id="${it.id}">Revisado</button>
+                            <button class="btn" data-act="goSchedule">Cronograma</button>
+                          ` : `
+                            <button class="btn" data-act="goTraps" data-id="${it.id}">Abrir</button>
+                            <button class="btn" data-act="startSim">Treino</button>
+                          `}
+                        </div>
+                      </td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            ` : `<div class="note">Sem itens suficientes ainda.</div>`}
+          </div>
+        </details>
+
+        <div class="hr"></div>
+
+        <details open class="compact">
+          <summary><span>Heatmap por disciplina (risco)</span><span class="chev">⌄</span></summary>
+          <div style="margin-top:10px;">
+            ${heatRows.length ? `
+              <table>
+                <thead><tr><th>Disciplina</th><th>Risco</th><th>Acurácia</th><th>Erros</th><th>Pegadinhas</th></tr></thead>
+                <tbody>
+                  ${heatRows.slice(0,12).map(r=>`
+                    <tr>
+                      <td><b>${escapeHtml(r.disc)}</b></td>
+                      <td><span class="badge overdue">${r.risk}</span><div class="tiny muted">atraso:${r.overdue} • errados:${r.qWrong}</div></td>
+                      <td>
+                        <span class="badge">${r.acc}%</span>
+                        <div class="bar" style="margin-top:6px;"><div style="width:${r.acc}%;"></div></div>
+                      </td>
+                      <td><span class="badge">${r.errors}</span></td>
+                      <td><span class="badge">${r.traps}</span></td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+              <div class="tiny muted" style="margin-top:8px;">Ordenado por risco (perda de pontos).</div>
+            ` : `<div class="note">Registre questões/erros para ver o heatmap.</div>`}
+          </div>
+        </details>
+
+      </div>
+    `;
+
+    // actions
+    const ag = app.querySelector('#aggro');
+    if(ag){
+      const val = app.querySelector('#aggroVal');
+      ag.oninput = ()=>{ if(val) val.textContent = Number(ag.value).toFixed(2) + 'x'; };
+      ag.onchange = ()=>{ setAggro(Number(ag.value)); toast('Agressividade: ' + Number(ag.value).toFixed(2) + 'x'); 
+function migrateExamIds(){
+  try{
+    const raw = localStorage.getItem("SAPE_STATE");
+    if(!raw) return;
+    const state = JSON.parse(raw);
+
+    let changed = false;
+
+    function ensure(list){
+      if(!Array.isArray(list)) return;
+      for(const item of list){
+        if(!item.examId){
+          item.examId = "TRT_AJ";
+          changed = true;
+        }
+      }
+    }
+
+    ensure(state.questions);
+    ensure(state.errors);
+    ensure(state.traps);
+
+    if(changed){
+      localStorage.setItem("SAPE_STATE", JSON.stringify(state));
+    }
+  }catch{}
+}
+
+migrateExamIds();
+
+
+  const sel = document.getElementById('examSelector');
+  if(sel){
+    sel.onchange = ()=>{
+      setActiveExam(sel.value);
+      toast('Concurso ativo: ' + (EXAMS[sel.value]?.name || sel.value)); go('dashboard');
+    };
+  }
+  render();
+ };
+    }
+    // presets
+    app.querySelectorAll('button[data-agg]').forEach(b=>{
+      b.onclick = ()=>{
+        const v = Number(b.getAttribute('data-agg'));
+        setAggro(v);
+        const ag = app.querySelector('#aggro');
+        const val = app.querySelector('#aggroVal');
+        if(ag) ag.value = String(v);
+        if(val) val.textContent = v.toFixed(2) + 'x';
+        toast('Agressividade: ' + v.toFixed(2) + 'x');
+        render();
+      };
+    });
+
+    // why-weight explain
+    const whyBox = app.querySelector('#whyBox');
+    function renderWhy(disc){
+      const { ex, actions } = recommendNextActions(store.getState(), disc);
+      if(!whyBox) return;
+      whyBox.style.display = 'block';
+      const lines = (ex.lines||[]).map(l=>{
+        const sign = (l.value>=0?'+':'');
+        const v = (typeof l.value==='number') ? (sign + l.value.toFixed(2)) : String(l.value);
+        return `<div class="tiny muted" style="margin-top:6px;"><b>${escapeHtml(l.label)}:</b> ${escapeHtml(v)} <span class="tiny muted">(${escapeHtml(l.detail||'')})</span></div>`;
+      }).join('');
+      const acts = (actions||[]).map(a=>{
+        const t = (a.title||"").toLowerCase();
+        let act = "questions";
+        if(t.includes("erro")) act = "errors";
+        else if(t.includes("cronograma")) act = "schedule";
+        else if(t.includes("pegad")) act = "traps";
+        else if(t.includes("quest")) act = "questions";
+        return `
+          <div class="note" style="margin-top:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+              <div>
+                <div class="tiny muted"><b>${escapeHtml(a.title)}</b></div>
+                <div class="tiny muted">${escapeHtml(a.detail||"")}</div>
+              </div>
+              <button class="btn primary" data-plan-act="${act}" data-plan-disc="${escapeHtml(ex.disc)}">Fazer agora</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      whyBox.innerHTML = `
+        <div class="h">${escapeHtml(ex.disc)} • peso final <span class="badge">${Number(ex.weight||1).toFixed(2)}x</span></div>
+        <div class="tiny muted">agressividade: ${Number(ex.aggro||1).toFixed(2)}x • risco:${ex.metrics.risk} • acurácia:${ex.metrics.acc}%</div>
+        ${lines}
+        <div class="hr"></div>
+        <div class="tiny muted"><b>O que fazer agora (próximos 20–30 min):</b></div>
+        ${acts || '<div class="tiny muted" style="margin-top:6px;">Sem recomendações ainda.</div>'}
+      `;
+    }
+
+    // initial render (persisted selection)
+    let initialDisc = null;
+    try{ initialDisc = localStorage.getItem(WHY_DISC_KEY); }catch{ initialDisc = null; }
+    if(!initialDisc){
+      const first = app.querySelector('button[data-why]');
+      if(first) initialDisc = first.getAttribute('data-why');
+    }
+    if(initialDisc) renderWhy(initialDisc);
+
+    app.querySelectorAll('button[data-why]').forEach(b=>{
+      b.onclick = ()=>{
+        const disc = b.getAttribute('data-why');
+        try{ localStorage.setItem(WHY_DISC_KEY, disc); }catch{}
+        renderWhy(disc);
+      };
+    });
+    // plan buttons (from recommendations)
+    app.querySelectorAll('button[data-plan-act]').forEach(b=>{
+      b.onclick = ()=>{
+        const act = b.getAttribute('data-plan-act') || 'questions';
+        const disc = b.getAttribute('data-plan-disc') || '';
+        try{ localStorage.setItem(WHY_DISC_KEY, disc); }catch{}
+        if(act === 'errors'){
+          const t = document.querySelector('.tab[data-tab="errors"]'); if(t) t.click();
+          return;
+        }
+        if(act === 'schedule'){
+          const t = document.querySelector('.tab[data-tab="schedule"]'); if(t) t.click();
+          return;
+        }
+        if(act === 'traps'){
+          const t = document.querySelector('.tab[data-tab="traps"]'); if(t) t.click();
+          return;
+        }
+        // default questions
+        const t = document.querySelector('.tab[data-tab="questions"]'); if(t) t.click();
+      };
+    });
+
+
+
+    app.querySelectorAll("button[data-act]").forEach(btn=>{
+      btn.onclick = ()=>{
+        const act = btn.getAttribute("data-act");
+        const id = btn.getAttribute("data-id");
+
+        if(act === "focusNext"){
+          if(queue.length){ focusIdx = (focusIdx + 1) % queue.length; render(); }
+          return;
+        }
+        if(act === "focusReviewed"){
+          store.dispatch({ type: A.ERROR_MARK_REVIEWED, id });
+          toast("Revisão marcada ✓");
+          if(queue.length){ focusIdx = (focusIdx + 1) % queue.length; }
+          render();
+          return;
+        }
+        if(act === "focusToSchedule"){
+          document.querySelector('.tab[data-tab="schedule"]').click();
+          return;
+        }
+        if(act === "focusOpenTrap"){
+          try{ localStorage.setItem("SAPE_TRAP_FOCUS_ID", id); }catch{}
+          document.querySelector('.tab[data-tab="traps"]').click();
+          return;
+        }
+        if(act === "focusStartSim"){
+          document.querySelector('.tab[data-tab="traps"]').click();
+          setTimeout(()=>{
+            const pool = (store.getState().traps || []);
+            if(pool.length < 3){ toast("Salve pelo menos 3 pegadinhas para iniciar."); return; }
+            store.dispatch({ type: A.TRAP_SIM_START });
+          }, 50);
+          return;
+        }
+
+        if(act === "revNow"){
+          store.dispatch({ type: A.ERROR_MARK_REVIEWED, id });
+          toast("Revisão marcada ✓");
+          return;
+        }
+        if(act === "goSchedule"){
+          document.querySelector('.tab[data-tab="schedule"]').click();
+          return;
+        }
+        if(act === "goTraps"){
+          try{ localStorage.setItem("SAPE_TRAP_FOCUS_ID", id); }catch{}
+          document.querySelector('.tab[data-tab="traps"]').click();
+          return;
+        }
+        if(act === "startSim"){
+          document.querySelector('.tab[data-tab="traps"]').click();
+          setTimeout(()=>{
+            const pool = (store.getState().traps || []);
+            if(pool.length < 3){ toast("Salve pelo menos 3 pegadinhas para iniciar."); return; }
+            store.dispatch({ type: A.TRAP_SIM_START });
+          }, 50);
+          return;
+        }
+      };
+    });
+  }
+
+  render();
+  const unsub = store.subscribe(()=>{ if(currentTab==="dashboard") render(); });
+  return ()=> unsub();
+}
+
+
+function mountErrors(){
+  function render(){
+    const state = store.getState();
+    const k = selectKpis(state);
+
+    app.innerHTML = `
+      <div class="grid">
+        <div class="card">
+          <div class="section-title">
+            <h2>Caderno de Erros</h2>
+            <span class="pill">Sem agenda: <b>${k.noSchedule}</b></span>
+          </div>
+
+          <div class="row">
+            <div><label>Disciplina</label><input id="disc" placeholder="Ex.: Constitucional" /></div>
+            <div><label>Assunto</label><input id="topic" placeholder="Ex.: Controle de constitucionalidade" /></div>
+          </div>
+
+          <div class="row">
+            <div><label>Banca</label><input id="bank" placeholder="Ex.: FCC" /></div>
+            <div>
+              <label>Primeira revisão</label>
+              <select id="firstReview">
+                <option value="today">Hoje</option>
+                <option value="tomorrow" selected>Amanhã</option>
+                <option value="3">Em 3 dias</option>
+                <option value="7">Em 7 dias</option>
+                <option value="none">Sem agendar</option>
+              </select>
+            </div>
+          </div>
+
+          <label>Causa do erro</label>
+          <textarea id="cause" placeholder="Ex.: confundi competência material x territorial; li rápido; peguei pegadinha..."></textarea>
+
+          <label>Notas (opcional)</label>
+          <textarea id="notes" placeholder="Ex.: regra, artigo, resumo curto, macete, print do porquê..."></textarea>
+
+          <div class="btnbar">
+            <button class="btn primary" id="add">Adicionar erro</button>
+            <button class="btn" id="clearForm">Limpar</button>
+          </div>
+
+          <div class="hr"></div>
+          <div class="note">Depois, revise no <b>Cronograma</b> (ou marque “Revisado” na lista).</div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">
+            <h2>Lista</h2>
+            <span class="pill">Atrasadas: <b>${k.overdue}</b> • Hoje: <b>${k.dueToday}</b></span>
+          </div>
+
+          <details open class="compact">
+            <summary>
+              <span>Lista + filtros</span>
+              <span class="chev">⌄</span>
+            </summary>
+            <div style="margin-top:10px;">
+              <div class="row">
+                <div><label>Filtro disciplina</label><input id="filterDisc" placeholder="(vazio = tudo)" /></div>
+                <div><label>Filtro banca</label><input id="filterBank" placeholder="(vazio = tudo)" /></div>
+              </div>
+              <div id="tableWrap" class="compact"></div>
+            </div>
+          </details>
+        </div>
+      </div>
+    `;
+
+    const tableWrap = document.getElementById("tableWrap");
+    const filterDisc = document.getElementById("filterDisc");
+    const filterBank = document.getElementById("filterBank");
+
+    function renderTable(){
+      const fd = safeString(filterDisc.value).trim().toLowerCase();
+      const fb = safeString(filterBank.value).trim().toLowerCase();
+
+      const rows = (state.errors || []).filter(e=>{
+        const okD = !fd || e.disc.toLowerCase().includes(fd);
+        const okB = !fb || e.bank.toLowerCase().includes(fb);
+        return okD && okB;
+      }).sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+
+      if(rows.length === 0){
+        tableWrap.innerHTML = `<div class="note">Nenhum erro ainda. Cadastre o primeiro à esquerda.</div>`;
+        return;
+      }
+
+      const today0 = startOfDay(new Date());
+      const tomorrow0 = addDays(today0, 1);
+
+      tableWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr><th>Disciplina / Assunto</th><th>Banca</th><th>Próx revisão</th><th>Ações</th></tr>
+          </thead>
+          <tbody>
+            ${rows.map(e=>{
+              const d = e.nextReviewAt ? new Date(e.nextReviewAt) : null;
+              let badge = `<span class="badge">sem agenda</span>`;
+              if(d && !Number.isNaN(d.getTime())){
+                if(d < today0) badge = `<span class="badge overdue">atrasado</span>`;
+                else if(d >= today0 && d < tomorrow0) badge = `<span class="badge today">hoje</span>`;
+                else badge = `<span class="badge soon">agendado</span>`;
+              }
+              return `
+                <tr>
+                  <td>
+                    <div><b>${escapeHtml(e.disc || "(sem disciplina)")}</b></div>
+                    <div class="muted tiny">${escapeHtml(e.topic || "(sem assunto)")}</div>
+                  </td>
+                  <td>${escapeHtml(e.bank || "-")}</td>
+                  <td>
+                    ${badge}
+                    <div class="tiny muted" style="margin-top:6px">${fmtDate(e.nextReviewAt)}</div>
+                    <div class="tiny muted">revisões: ${Array.isArray(e.reviewHistory)? e.reviewHistory.length : 0}</div>
+                  </td>
+                  <td>
+                    <div class="actions">
+                      <button class="btn" data-act="review" data-id="${e.id}">Revisado</button>
+                      <button class="btn" data-act="postpone" data-id="${e.id}">+1 dia</button>
+                      <button class="btn danger" data-act="del" data-id="${e.id}">Excluir</button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+
+      tableWrap.querySelectorAll("button[data-act]").forEach(b=>{
+        b.onclick = ()=>{
+          const id = b.getAttribute("data-id");
+          const act = b.getAttribute("data-act");
+          if(act==="review"){
+            store.dispatch({ type: A.ERROR_MARK_REVIEWED, id });
+            toast("Revisão marcada ✓");
+          } else if(act==="postpone"){
+            store.dispatch({ type: A.ERROR_POSTPONE, id, days: 1 });
+            toast("Adiado +1 dia");
+          } else if(act==="del"){
+            if(confirm("Excluir este erro?")){
+              store.dispatch({ type: A.ERROR_DELETE, id });
+              toast("Excluído");
+            }
+          }
+        };
+      });
+    }
+
+    filterDisc.oninput = renderTable;
+    filterBank.oninput = renderTable;
+
+    document.getElementById("add").onclick = ()=>{
+      const disc = safeString(document.getElementById("disc").value).trim();
+      const topic = safeString(document.getElementById("topic").value).trim();
+      const bank = safeString(document.getElementById("bank").value).trim();
+      const cause = safeString(document.getElementById("cause").value).trim();
+      const notes = safeString(document.getElementById("notes").value).trim();
+      const first = document.getElementById("firstReview").value;
+
+      if(!disc && !topic){ toast("Preencha ao menos Disciplina ou Assunto."); return; }
+
+      const now = new Date();
+      let nextReviewAt = null;
+
+      if(first === "today") nextReviewAt = startOfDay(now).toISOString();
+      else if(first === "tomorrow") nextReviewAt = addDays(startOfDay(now), 1).toISOString();
+      else if(first === "none") nextReviewAt = null;
+      else {
+        const days = Number(first);
+        nextReviewAt = addDays(startOfDay(now), Number.isFinite(days) ? days : 3).toISOString();
+      }
+
+      store.dispatch({ type: A.ERROR_ADD, payload: {
+        id: uid(), createdAt: now.toISOString(), disc, topic, bank, cause, notes,
+        mistakeType:"", nextReviewAt, reviewHistory:[]
+      }});
+      toast("Erro adicionado ✓");
+      clearForm();
+    };
+
+    function clearForm(){
+      ["disc","topic","bank","cause","notes"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
+      document.getElementById("firstReview").value = "tomorrow";
+    }
+    document.getElementById("clearForm").onclick = ()=> clearForm();
+
+    renderTable();
+  }
+
+  render();
+  const unsub = store.subscribe(()=>{ if(currentTab==="errors") render(); });
+  return ()=> unsub();
+}
+
+function mountSchedule(){
+  function render(){
+    const state = store.getState();
+    const b = selectScheduleBuckets(state);
+    const weekKeys = Object.keys(b.week).sort((a,b)=> new Date(a) - new Date(b));
+
+    app.innerHTML = `
+      <div class="card">
+        <div class="section-title">
+          <h2>Cronograma</h2>
+          <span class="pill">Hoje: <b>${b.today.length}</b> • Atrasadas: <b>${b.overdue.length}</b></span>
+        </div>
+
+        <div class="note">Revisões do <b>Caderno de Erros</b> por data. Use “Revisado” para reagendar (3 → 7 → 14 dias).</div>
+        <div class="hr"></div>
+
+        ${renderBucket("Revisões atrasadas", b.overdue, "overdue")}
+        ${renderBucket("Revisões para hoje", b.today, "today")}
+
+        <div class="hr"></div>
+
+        <details open class="compact">
+          <summary>
+            <span>Próximos 7 dias</span>
+            <span class="chev">⌄</span>
+          </summary>
+          <div style="margin-top:10px;">
+            <div class="note">Organizado por dia.</div>
+            ${weekKeys.length ? weekKeys.map(k => `
+          <div class="card" style="box-shadow:none;border-style:dashed;margin:10px 0;">
+            <div class="section-title">
+              <div><b>${fmtDate(k)}</b></div>
+              <span class="pill">${b.week[k].length} itens</span>
+            </div>
+            ${renderList(b.week[k])}
+          </div>
+        `).join("") : `<div class="note">Nada agendado para os próximos 7 dias.</div>`}
+          </div>
+        </details>
+
+        <div class="hr"></div>
+
+        <details class="compact">
+          <summary>
+            <span>Sem agenda</span>
+            <span class="chev">⌄</span>
+          </summary>
+          <div style="margin-top:10px;">
+            <div class="section-title" style="margin-top:0;">
+              <h3 style="margin:0;">Itens sem agenda</h3>
+              <span class="pill"><b>${b.backlog.length}</b></span>
+            </div>
+          <span class="pill"><b>${b.backlog.length}</b></span>
+        </div>
+
+        ${b.backlog.length ? `
+          <div class="note">Esses erros estão sem revisão definida. Você pode agendar com “Hoje/Amanhã/+7”.</div>
+          ${renderList(b.backlog, true)}
+        ` : `<div class="note">Nenhum item sem agenda.</div>`}
+          </div>
+        </details>
+      </div>
+    `;
+
+    const ag = app.querySelector('#aggro');
+    if(ag){
+      const val = app.querySelector('#aggroVal');
+      ag.oninput = ()=>{ if(val) val.textContent = Number(ag.value).toFixed(2) + 'x'; };
+      ag.onchange = ()=>{ setAggro(Number(ag.value)); toast('Agressividade: ' + Number(ag.value).toFixed(2) + 'x'); render(); };
+    }
+
+    app.querySelectorAll("button[data-act]").forEach(btn=>{
+      btn.onclick = ()=>{
+        const id = btn.getAttribute("data-id");
+        const act = btn.getAttribute("data-act");
+        if(act === "review"){
+          store.dispatch({ type: A.ERROR_MARK_REVIEWED, id }); toast("Revisão marcada ✓");
+        } else if(act === "postpone"){
+          store.dispatch({ type: A.ERROR_POSTPONE, id, days: 1 }); toast("Adiado +1 dia");
+        } else if(act === "setToday"){
+          store.dispatch({ type: A.ERROR_SET_NEXT_REVIEW, id, when: startOfDay(new Date()) }); toast("Agendado para hoje");
+        } else if(act === "setTomorrow"){
+          store.dispatch({ type: A.ERROR_SET_NEXT_REVIEW, id, when: addDays(startOfDay(new Date()), 1) }); toast("Agendado para amanhã");
+        } else if(act === "set7"){
+          store.dispatch({ type: A.ERROR_SET_NEXT_REVIEW, id, when: addDays(startOfDay(new Date()), 7) }); toast("Agendado +7 dias");
+        } else if(act === "del"){
+          if(confirm("Excluir este erro?")){ store.dispatch({ type: A.ERROR_DELETE, id }); toast("Excluído"); }
+        }
+      };
+    });
+  }
+
+  function renderBucket(title, items, badgeKind){
+    const badgeClass = badgeKind === "overdue" ? "overdue" : (badgeKind === "today" ? "today" : "soon");
+    return `
+      <div class="section-title" style="margin-top:10px;">
+        <h3>${title}</h3>
+        <span class="pill"><span class="badge ${badgeClass}">${items.length}</span></span>
+      </div>
+      ${items.length ? renderList(items) : `<div class="note">Nada aqui.</div>`}
+    `;
+  }
+
+  function renderList(items, isBacklog=false){
+    return `
+      <table>
+        <thead><tr><th>Item</th><th>Próx revisão</th><th>Ações</th></tr></thead>
+        <tbody>
+          ${items.map(e => `
+            <tr>
+              <td>
+                <div><b>${escapeHtml(e.disc || "(sem disciplina)")}</b> <span class="muted">—</span> ${escapeHtml(e.topic || "(sem assunto)")}</div>
+                <div class="tiny muted">banca: ${escapeHtml(e.bank || "-")} • revisões: ${Array.isArray(e.reviewHistory)? e.reviewHistory.length : 0}</div>
+              </td>
+              <td><div>${fmtDate(e.nextReviewAt)}</div><div class="tiny muted">${(e.nextReviewAt ? "" : "sem agenda")}</div></td>
+              <td>
+                <div class="actions">
+                  <button class="btn" data-act="review" data-id="${e.id}">Revisado</button>
+                  <button class="btn" data-act="postpone" data-id="${e.id}">+1 dia</button>
+                  ${isBacklog ? `
+                    <button class="btn" data-act="setToday" data-id="${e.id}">Hoje</button>
+                    <button class="btn" data-act="setTomorrow" data-id="${e.id}">Amanhã</button>
+                    <button class="btn" data-act="set7" data-id="${e.id}">+7</button>
+                  ` : ``}
+                  <button class="btn danger" data-act="del" data-id="${e.id}">Excluir</button>
+                </div>
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  render();
+  const unsub = store.subscribe(()=>{ if(currentTab==="schedule") render(); });
+  return ()=> unsub();
+}
+
+function mountTraps(){
+  let lastAnalysis = null;
+
+  function render(){
+    const state = store.getState();
+    const traps = Array.isArray(state.traps) ? state.traps : [];
+    const sim = state.advSim;
+
+    app.innerHTML = `
+      <div class="grid">
+        <div class="card">
+          <div class="section-title">
+            <h2>Pegadinhas (DPA)</h2>
+            <span class="pill">Salvas: <b>${traps.length}</b></span>
+          </div>
+
+          <div class="row">
+            <div><label>Disciplina</label><input id="trapDisc" placeholder="Ex.: Proc. do Trabalho" /></div>
+            <div><label>Tópico</label><input id="trapTopic" placeholder="Ex.: Competência" /></div>
+          </div>
+
+          <div class="row">
+            <div><label>Banca</label><input id="trapBank" placeholder="Ex.: FCC / FGV / CEBRASPE / AUTO" /></div>
+            <div>
+              <label>Tipo</label>
+              <select id="trapType">
+                <option>Ambígua/dupla interpretação</option>
+                <option>Negação/EXCETO</option>
+                <option>Absolutismo (sempre/nunca)</option>
+                <option>Conceitual (distinções finas)</option>
+                <option>Processual (prazo/cabimento/efeitos)</option>
+                <option>Exceção/regra</option>
+                <option>Literalidade x contexto</option>
+              </select>
+            </div>
+          </div>
+
+          <label>Texto da pegadinha (cole a questão/trecho)</label>
+          <textarea id="trapText" placeholder="Cole aqui o trecho pegadinha..."></textarea>
+
+          <label>Correção (opcional, mas recomendado)</label>
+          <textarea id="trapFix" placeholder="O que faria essa assertiva ficar correta? Qual detalhe muda o gabarito?"></textarea>
+
+          <div class="btnbar">
+            <button class="btn primary" id="btnTrapAnalyze">Analisar</button>
+            <button class="btn" id="btnTrapSave">Salvar</button>
+            <button class="btn" id="btnTrapClear">Limpar</button>
+            <button class="btn" id="btnStartAdvSim">Treino (10)</button>
+          </div>
+
+          <div class="hr"></div>
+
+          <details open class="compact">
+            <summary>
+              <span>Análise + Treino</span>
+              <span class="chev">⌄</span>
+            </summary>
+            <div style="margin-top:10px;">
+              <div id="trapAnalysis" class="note">Cole uma pegadinha e clique em <b>Analisar</b>.</div>
+              ${sim ? `
+                <div class="hr"></div>
+                ${renderSim(sim)}
+              ` : ``}
+            </div>
+          </details>
+        </div>
+
+        <div class="card">
+          <div class="section-title">
+            <h2>Mapa</h2>
+            <span class="pill">Top perigo: <b>${topDanger(traps)}</b></span>
+          </div>
+          <details open class="compact">
+            <summary>
+              <span>Lista de pegadinhas</span>
+              <span class="chev">⌄</span>
+            </summary>
+            <div style="margin-top:10px;">
+              <div id="trapTable" class="compact"></div>
+            </div>
+          </details>
+        </div>
+      </div>
+    `;
+
+    // bindings
+    const btnAnalyze = document.getElementById("btnTrapAnalyze");
+    const btnSave = document.getElementById("btnTrapSave");
+    const btnClear = document.getElementById("btnTrapClear");
+    const btnStart = document.getElementById("btnStartAdvSim");
+
+    btnAnalyze.onclick = ()=>{
+      const payload = collectTrapForm();
+      if(!payload.text.trim()){ toast("Cole ou descreva a pegadinha."); return; }
+      lastAnalysis = analyzeTrapPayload(payload);
+      renderAnalysis(lastAnalysis);
+    };
+
+    btnSave.onclick = ()=>{
+      const payload = collectTrapForm();
+      if(!payload.text.trim()){ toast("Cole ou descreva a pegadinha antes de salvar."); return; }
+      const item = analyzeTrapPayload(payload);
+      store.dispatch({ type: A.TRAP_ADD, payload: item });
+      lastAnalysis = item;
+      renderAnalysis(item);
+      toast("Pegadinha salva ✓");
+      renderTrapTable();
+    };
+
+    btnClear.onclick = ()=>{
+      ["trapDisc","trapTopic","trapBank","trapText","trapFix"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
+      document.getElementById("trapType").selectedIndex = 0;
+      lastAnalysis = null;
+      renderAnalysis(null);
+    };
+
+    btnStart.onclick = ()=>{
+      const pool = (store.getState().traps || []);
+      if(pool.length < 3){ toast("Salve pelo menos 3 pegadinhas para iniciar."); return; }
+      store.dispatch({ type: A.TRAP_SIM_START });
+      toast("Treino iniciado");
+    };
+
+    // bind sim buttons if exists
+    const simWrap = document.getElementById("simWrap");
+    if(simWrap){
+      simWrap.querySelectorAll("button[data-sim]").forEach(b=>{
+        b.onclick = ()=>{
+          const act = b.getAttribute("data-sim");
+          if(act==="right") store.dispatch({ type: A.TRAP_SIM_ANSWER, correct: true });
+          if(act==="wrong") store.dispatch({ type: A.TRAP_SIM_ANSWER, correct: false });
+          if(act==="end") store.dispatch({ type: A.TRAP_SIM_END });
+        };
+      });
+    }
+
+    function renderAnalysis(a){
+      const box = document.getElementById("trapAnalysis");
+      if(!box) return;
+      if(!a){
+        box.innerHTML = `Cole uma pegadinha e clique em <b>Analisar</b>.`;
+        return;
+      }
+      box.innerHTML = `
+        <div class="section-title" style="margin:0;">
+          <div><b>Perigo:</b> ${a.danger}/100</div>
+          <span class="pill">Tipo: <b>${escapeHtml(a.type)}</b></span>
+        </div>
+        <div class="hr"></div>
+        <div><b>Erros típicos:</b> ${(a.typical||[]).map(t=>`<span class="badge">${escapeHtml(t)}</span>`).join(" ")}</div>
+        <div style="margin-top:10px;"><b>Treino recomendado:</b><ul class="note" style="margin:8px 0 0 18px;">
+          ${(a.trainPlan||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join("")}
+        </ul></div>
+      `;
+    }
+
+    function renderTrapTable(){
+      const state2 = store.getState();
+      const rows = (state2.traps || []).slice().sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+      const wrap = document.getElementById("trapTable");
+      if(!wrap) return;
+
+      if(rows.length === 0){
+        wrap.innerHTML = `<div class="note">Nenhuma pegadinha ainda. Salve as que você cair durante as questões.</div>`;
+        return;
+      }
+
+      wrap.innerHTML = `
+        <table>
+          <thead><tr><th>Disc / Tópico</th><th>Perigo</th><th>Tipo</th><th>Ações</th></tr></thead>
+          <tbody>
+            ${rows.map(t=>`
+              <tr>
+                <td>
+                  <div><b>${escapeHtml(t.disc || "(sem disciplina)")}</b></div>
+                  <div class="tiny muted">${escapeHtml(t.topic || "(sem tópico)")}</div>
+                  <div class="tiny muted">banca: ${escapeHtml(t.bank || "-")}</div>
+                </td>
+                <td><span class="badge">${t.danger}/100</span><div class="tiny muted">${fmtDate(t.createdAt)}</div></td>
+                <td>${escapeHtml(t.type || "-")}</td>
+                <td>
+                  <div class="actions">
+                    <button class="btn" data-act="open" data-id="${t.id}">Ver</button>
+                    <button class="btn danger" data-act="del" data-id="${t.id}">Excluir</button>
+                  </div>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+
+      wrap.querySelectorAll("button[data-act]").forEach(b=>{
+        b.onclick = ()=>{
+          const act = b.getAttribute("data-act");
+          const id = b.getAttribute("data-id");
+          const trap = (store.getState().traps || []).find(x=>x.id===id);
+          if(act==="open" && trap){
+            lastAnalysis = trap;
+            // preencher form com o item
+            document.getElementById("trapDisc").value = trap.disc || "";
+            document.getElementById("trapTopic").value = trap.topic || "";
+            document.getElementById("trapBank").value = trap.bank || "";
+            document.getElementById("trapText").value = trap.text || "";
+            document.getElementById("trapFix").value = trap.fix || "";
+            // tentar selecionar tipo
+            const sel = document.getElementById("trapType");
+            const idx = Array.from(sel.options).findIndex(o=>o.textContent===trap.type);
+            sel.selectedIndex = idx >= 0 ? idx : 0;
+            renderAnalysis(trap);
+            toast("Pegadinha carregada");
+          }
+          if(act==="del"){
+            if(confirm("Excluir esta pegadinha?")){
+              store.dispatch({ type: A.TRAP_DELETE, id });
+              toast("Excluída");
+              renderTrapTable();
+            }
+          }
+        };
+      });
+    }
+
+    function collectTrapForm(){
+      return {
+        disc: (document.getElementById("trapDisc")||{}).value || "",
+        topic: (document.getElementById("trapTopic")||{}).value || "",
+        bank: (document.getElementById("trapBank")||{}).value || "AUTO",
+        type: (document.getElementById("trapType")||{}).value || "Ambígua/dupla interpretação",
+        text: (document.getElementById("trapText")||{}).value || "",
+        fix: (document.getElementById("trapFix")||{}).value || ""
+      };
+    }
+
+    renderAnalysis(lastAnalysis);
+    renderTrapTable();
+
+    // Auto-focus trap if requested by dashboard
+    try{
+      const focusId = localStorage.getItem("SAPE_TRAP_FOCUS_ID");
+      if(focusId){
+        const trap = (store.getState().traps || []).find(x=>x.id===focusId);
+        if(trap){
+          lastAnalysis = trap;
+          document.getElementById("trapDisc").value = trap.disc || "";
+          document.getElementById("trapTopic").value = trap.topic || "";
+          document.getElementById("trapBank").value = trap.bank || "";
+          document.getElementById("trapText").value = trap.text || "";
+          document.getElementById("trapFix").value = trap.fix || "";
+          const sel = document.getElementById("trapType");
+          const idx = Array.from(sel.options).findIndex(o=>o.textContent===trap.type);
+          sel.selectedIndex = idx >= 0 ? idx : 0;
+          renderAnalysis(trap);
+          localStorage.removeItem("SAPE_TRAP_FOCUS_ID");
+        }
+      }
+    }catch{}
+
+  }
+
+  function renderSim(sim){
+    if(sim && sim.error==="MIN_3"){
+      return `<div class="note">Salve pelo menos 3 pegadinhas para iniciar o treino.</div>`;
+    }
+    if(!sim || !Array.isArray(sim.items)) return "";
+    const idx = Math.min(sim.idx, sim.items.length-1);
+    const cur = sim.items[idx] || sim.items[sim.items.length-1];
+
+    return `
+      <div id="simWrap">
+        <div class="section-title">
+          <h3>Treino adversarial</h3>
+          <span class="pill">Progresso: <b>${Math.min(sim.idx, sim.items.length)}/${sim.items.length}</b> • ✓ ${sim.right} ✗ ${sim.wrong}</span>
+        </div>
+
+        ${sim.done ? `
+          <div class="card" style="box-shadow:none;border-style:dashed;">
+            <div><b>Finalizado.</b></div>
+            <div class="note">Acertos: ${sim.right} • Erros: ${sim.wrong}</div>
+            <div class="btnbar" style="margin-top:10px;">
+              <button class="btn primary" data-sim="end">Encerrar</button>
+            </div>
+          </div>
+        ` : `
+          <div class="card" style="box-shadow:none;border-style:dashed;">
+            <div class="tiny muted">Disciplina: ${escapeHtml(cur.disc || "-")} • Tópico: ${escapeHtml(cur.topic || "-")} • Tipo: ${escapeHtml(cur.type || "-")}</div>
+            <div style="margin-top:8px;"><b>Texto:</b></div>
+            <div class="note" style="white-space:pre-wrap;">${escapeHtml(cur.text || "")}</div>
+            ${cur.fix ? `<div style="margin-top:8px;"><b>Correção:</b></div><div class="note" style="white-space:pre-wrap;">${escapeHtml(cur.fix)}</div>` : ``}
+
+            <div class="btnbar" style="margin-top:10px;">
+              <button class="btn primary" data-sim="right">Acertei</button>
+              <button class="btn" data-sim="wrong">Errei</button>
+              <button class="btn danger" data-sim="end">Encerrar</button>
+            </div>
+          </div>
+        `}
+      </div>
+    `;
+  }
+
+  function topDanger(traps){
+    if(!traps || !traps.length) return "-";
+    const max = traps.reduce((m,t)=> Math.max(m, Number(t.danger||0)), 0);
+    return max ? (max + "/100") : "-";
+  }
+
+  render();
+  const unsub = store.subscribe(()=>{ if(currentTab==="traps") render(); });
+  return ()=> unsub();
+}
+
+
+function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+function pct(n){ return Math.round(n*100); }
+
+function computeExamStats(state, examId){
+  const qs = (state.questions||[]).filter(q=> q.examId === examId);
+  const es = (state.errors||[]).filter(e=> e.examId === examId);
+  const ts = (state.traps||[]).filter(t=> t.examId === examId);
+
+  const last100 = qs.slice(0,100);
+  const acc = last100.length ? (last100.filter(q=>q.isCorrect===true).length / last100.length) : 0;
+
+  const discs = new Set(qs.map(q=> (q.disc||"(sem disciplina)").trim() || "(sem disciplina)"));
+  const topics = new Set(qs.map(q=> (q.topic||"").trim()).filter(Boolean));
+
+  // Coverage proxy: more unique disciplines and topics → better coverage
+  const discScore = clamp(discs.size / 12, 0, 1);         // assume ~12 core disciplines as "full"
+  const topicScore = clamp(topics.size / 60, 0, 1);       // assume ~60 topics as "broad"
+  const volScore = clamp(Math.log10(qs.length + 1) / 3, 0, 1); // ~1000 qs → ~1
+  const errPenalty = clamp((es.length + ts.length) / 300, 0, 1); // 300+ items → max penalty
+
+  // Maturity: weighted blend (tunable)
+  const maturity = clamp((acc*0.45) + (volScore*0.25) + (discScore*0.15) + (topicScore*0.15) - (errPenalty*0.10), 0, 1);
+
+  return {
+    examId,
+    qTotal: qs.length,
+    acc: acc,
+    accPct: pct(acc),
+    discs: discs.size,
+    topics: topics.size,
+    errors: es.length,
+    traps: ts.length,
+    maturity,
+    maturityPct: pct(maturity)
+  };
+}
+
+function mountCompare(){
+  const app = document.getElementById("app");
+  const state = store.getState();
+  const active = getActiveExam();
+
+  const stats = Object.keys(EXAMS).map(id=> computeExamStats(state, id))
+    .sort((a,b)=> b.maturity - a.maturity);
+
+  const rows = stats.map(s=>`
+    <tr>
+      <td><span class="badge">${escapeHtml(s.examId)}</span></td>
+      <td><b>${escapeHtml(EXAMS[s.examId]?.name || s.examId)}</b>${s.examId===active?` <span class="pill">ativo</span>`:""}</td>
+      <td>${s.maturityPct}%</td>
+      <td>${s.accPct}%</td>
+      <td>${s.qTotal}</td>
+      <td>${s.discs}</td>
+      <td>${s.topics}</td>
+      <td>${s.errors}</td>
+      <td>${s.traps}</td>
+      <td><button class="btn" data-set-exam="${escapeHtml(s.examId)}">Ativar</button></td>
+    </tr>
+  `).join("");
+
+  const best = stats[0];
+  const act = stats.find(x=>x.examId===active);
+
+  app.innerHTML = `
+    <div class="section-title">
+      <h2>Comparativo</h2>
+      <div class="tiny muted">Painel de maturidade por concurso (separado do Dashboard).</div>
+    </div>
+
+    <div class="statgrid">
+      <div class="statcard">
+        <div class="h">Mais maduro agora</div>
+        <div class="v">${escapeHtml(EXAMS[best?.examId]?.name || best?.examId || "-")}</div>
+        <div class="tiny muted">maturidade: ${best?best.maturityPct:0}% • acurácia: ${best?best.accPct:0}%</div>
+      </div>
+      <div class="statcard">
+        <div class="h">Concurso ativo</div>
+        <div class="v">${escapeHtml(EXAMS[active]?.name || active)}</div>
+        <div class="tiny muted">maturidade: ${act?act.maturityPct:0}% • questões: ${act?act.qTotal:0}</div>
+      </div>
+      <div class="statcard">
+        <div class="h">Como subir rápido</div>
+        <div class="v">+5–10 pts</div>
+        <div class="tiny muted">aumente volume + corrija erros críticos (ver Caderno de erros)</div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="statcard">
+      <div class="h">Tabela comparativa</div>
+      <div class="tiny muted">Maturidade combina acurácia (últimas 100), volume, cobertura (disciplinas/tópicos) e penaliza acúmulo de erros/pegadinhas.</div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Concurso</th><th>Maturidade</th><th>Acurácia</th><th>Questões</th><th>Disciplinas</th><th>Tópicos</th><th>Erros</th><th>Pegadinhas</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows || `<tr><td colspan="10" class="tiny muted">Sem dados ainda — registre questões/erros por concurso.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <h3 style="margin:0">Pesos por disciplina (opcional)</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="weightsReset">Resetar</button>
+          <button class="btn primary" id="weightsSave">Salvar</button>
+        </div>
+      </div>
+      <div class="muted" style="margin-top:6px">
+        Ajuste fino para refletir seu edital/ênfase. Impacta metas, recomendações e simulados.
+      </div>
+      <div id="weightsEditor" style="margin-top:10px"></div>
+    </div>
+  `;
+
+  app.querySelectorAll("button[data-set-exam]").forEach(b=>{
+    b.onclick = ()=>{
+      const id = b.getAttribute("data-set-exam");
+      setActiveExam(id);
+      toast("Concurso ativo: " + (EXAMS[id]?.name || id));
+      go("dashboard");
+    };
+  });
+
+  // === Editor de pesos por disciplina (opcional) ===
+  const weightsEl = app.querySelector("#weightsEditor");
+  const btnSave = app.querySelector("#weightsSave");
+  const btnReset = app.querySelector("#weightsReset");
+
+  function renderWeights(){
+    const active = getActiveExam();
+    const discs = listDiscsForExam(state, active);
+    const base = (EXAMS[active] && EXAMS[active].weights) ? EXAMS[active].weights : {};
+    const custom = loadExamWeights(active);
+    const merged = getExamWeights(active);
+
+    if(!weightsEl){ return; }
+    if(discs.length===0){
+      weightsEl.innerHTML = '<div class="muted">Sem disciplinas registradas ainda. Adicione algumas Questões/Erros para popular a lista.</div>';
+      return;
+    }
+
+    weightsEl.innerHTML = `
+      <div style="overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Disciplina</th>
+              <th style="text-align:right">Peso</th>
+              <th class="hide-sm" style="text-align:right">Base</th>
+              <th class="hide-sm">Obs.</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${discs.map((d,i)=>{
+              const v = Number(merged[d] ?? 1);
+              const b = Number(base[d] ?? 1);
+              const isCustom = Object.prototype.hasOwnProperty.call(custom, d);
+              const note = isCustom ? "custom" : (Object.prototype.hasOwnProperty.call(base,d) ? "base" : "1.0");
+              return `
+                <tr>
+                  <td>${escapeHTML(d)}</td>
+                  <td style="text-align:right">
+                    <input class="input" data-w-disc="${escapeHTML(d)}" value="${String(v)}" inputmode="decimal" style="max-width:110px;text-align:right">
+                  </td>
+                  <td class="hide-sm" style="text-align:right">${String(b)}</td>
+                  <td class="hide-sm"><span class="chip">${note}</span></td>
+                </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function readWeightsFromUI(){
+    const active = getActiveExam();
+    const inputs = Array.from(app.querySelectorAll("input[data-w-disc]"));
+    const out = {};
+    inputs.forEach(inp=>{
+      const disc = inp.getAttribute("data-w-disc");
+      let val = Number(String(inp.value).replace(",", "."));
+      if(!Number.isFinite(val) || val<=0) val = 1;
+      out[disc] = Math.round(val*100)/100;
+    });
+    return out;
+  }
+
+  if(btnSave){
+    btnSave.onclick = ()=>{
+      const active = getActiveExam();
+      const base = (EXAMS[active] && EXAMS[active].weights) ? EXAMS[active].weights : {};
+      const all = readWeightsFromUI();
+
+      // salva apenas diferenças do base para manter storage leve
+      const diff = {};
+      Object.keys(all).forEach(d=>{
+        const v = all[d];
+        const b = Number(base[d] ?? 1);
+        if(Math.abs(v - b) > 0.001) diff[d] = v;
+      });
+
+      saveExamWeights(active, diff);
+      toast("Pesos salvos para " + (EXAMS[active]?.name || active));
+      renderWeights();
+    };
+  }
+  if(btnReset){
+    btnReset.onclick = ()=>{
+      const active = getActiveExam();
+      resetExamWeights(active);
+      toast("Pesos resetados para " + (EXAMS[active]?.name || active));
+      renderWeights();
+    };
+  }
+
+  renderWeights();
+
+
+
+  return ()=>{};
+}
+
+function mountSim(){
+  const app = document.getElementById("app");
+  const active = getActiveExam();
+  const examName = (EXAMS[active] && EXAMS[active].name) ? EXAMS[active].name : active;
+
+  let session = { running:false, idx:0, items:[], startedAt:null, total:20, mode:"risco", timeLimitMin:60, done:false };
+
+  function buildSession(){
+    const state = store.getState();
+    const pool = filterByExam(state.questions || []).filter(q=> (q.qtext||"").trim().length>0);
+    const unseen = pool.filter(q=> q.isCorrect === null);
+    const basePool = unseen.length >= 20 ? unseen : pool;
+
+    const N = Math.max(10, Math.min(120, Number(session.total)||20));
+    const mode = session.mode;
+
+    const items = [];
+    if(basePool.length){
+      const used = new Set();
+      for(let i=0;i<N;i++){
+        let pick = null;
+        if(mode === "risco"){
+          const targetDisc = sampleWeightedDisc(store.getState());
+          const candidates = basePool.filter(q=> (q.disc||"(sem disciplina)") === targetDisc && !used.has(q.id));
+          if(candidates.length){
+            pick = candidates[Math.floor(Math.random()*candidates.length)];
+          }
+        }
+        if(!pick){
+          let tries = 0;
+          while(tries<50){
+            const q = basePool[Math.floor(Math.random()*basePool.length)];
+            if(!used.has(q.id)){ pick = q; break; }
+            tries++;
+          }
+          if(!pick) pick = basePool[Math.floor(Math.random()*basePool.length)];
+        }
+        used.add(pick.id);
+        items.push({ disc: pick.disc || "(sem disciplina)", topic: pick.topic || "", qtext: pick.qtext || "", answerKey: pick.answerKey || "" });
+      }
+    }else{
+      for(let i=0;i<N;i++){
+        const d = (mode==="risco") ? sampleWeightedDisc(store.getState()) : "(sem disciplina)";
+        items.push({ disc:d, topic:"", qtext:"(registre aqui a questão que você fez)", answerKey:"" });
+      }
+    }
+
+    session = { ...session, running:true, idx:0, items, startedAt: Date.now(), done:false };
+    render();
+  }
+
+  function stopSession(){
+    session = { ...session, running:false, done:false };
+    render();
+  }
+
+  function elapsedMin(){
+    if(!session.startedAt) return 0;
+    return Math.floor((Date.now() - session.startedAt)/60000);
+  }
+
+  function recordAnswer(isCorrect){
+    const it = session.items[session.idx];
+    if(!it) return;
+    const notesEl = document.getElementById("simNotes");
+    const ansEl = document.getElementById("simAns");
+    const userAnswer = ansEl ? ansEl.value : "";
+    const notes = notesEl ? notesEl.value : "";
+
+    // Try to dispatch using existing action types
+    const payload = sanitizeQuestion({
+      examId: active,
+      disc: it.disc,
+      topic: it.topic,
+      bank: "",
+      source: "Simulado",
+      qtext: it.qtext,
+      answerKey: it.answerKey,
+      userAnswer,
+      isCorrect: !!isCorrect,
+      notes
+    });
+
+    try{
+      store.dispatch({ type:"ADD_QUESTION", payload });
+    }catch{
+      // fallback: some builds use ADD_QUESTIONS (batch)
+      try{ store.dispatch({ type:"ADD_QUESTIONS", payload: [payload] }); }catch{}
+    }
+
+    const nextIdx = session.idx + 1;
+    if(nextIdx >= session.items.length){
+      session = { ...session, idx: nextIdx, running:false, done:true };
+    }else{
+      session = { ...session, idx: nextIdx };
+    }
+    render();
+  }
+
+  function render(){
+    const s = store.getState();
+    const qAll = filterByExam(s.questions || []);
+    const last = qAll.slice(0,50);
+    const acc = last.length ? Math.round((last.filter(x=>x.isCorrect===true).length/last.length)*100) : 0;
+
+    const running = session.running;
+    const idx = session.idx;
+    const it = running ? session.items[idx] : null;
+    const remaining = running ? (session.items.length - idx) : 0;
+
+    app.innerHTML = `
+      <div class="section-title">
+        <h2>Simulados</h2>
+        <div class="tiny muted">Concurso ativo: <b>${escapeHtml(examName)}</b></div>
+      </div>
+
+      <div class="statgrid">
+        <div class="statcard"><div class="h">Acurácia (últimas 50)</div><div class="v">${acc}%</div><div class="tiny muted">Baseado no concurso ativo</div></div>
+        <div class="statcard"><div class="h">Status</div><div class="v">${running ? "Em andamento" : "Pronto"}</div><div class="tiny muted">${running ? `Questão ${idx+1}/${session.items.length}` : "Monte um simulado"}</div></div>
+        <div class="statcard"><div class="h">Tempo</div><div class="v">${running ? `${elapsedMin()} min` : "-"}</div><div class="tiny muted">Limite: ${session.timeLimitMin} min</div></div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="statcard">
+        <div class="h">Simulado Prova Real</div>
+        <div class="tiny muted">Modo “Risco” prioriza disciplinas com peso alto. Se você ainda não registrou questões, ele gera placeholders por disciplina.</div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:flex-end;">
+          <label class="tiny muted">Questões<br>
+            <input id="simN" class="input" type="number" min="10" max="120" value="${escapeHtml(String(session.total))}" style="width:120px;">
+          </label>
+          <label class="tiny muted">Tempo (min)<br>
+            <input id="simT" class="input" type="number" min="10" max="240" value="${escapeHtml(String(session.timeLimitMin))}" style="width:140px;">
+          </label>
+          <label class="tiny muted">Modo<br>
+            <select id="simMode" class="input" style="width:220px;">
+              <option value="risco" ${session.mode==="risco"?"selected":""}>Risco (adaptativo)</option>
+              <option value="aleatorio" ${session.mode==="aleatorio"?"selected":""}>Aleatório</option>
+            </select>
+          </label>
+
+          ${running ? `
+            <button class="btn" id="simStop">Encerrar</button>
+          ` : `
+            <button class="btn primary" id="simStart">Começar simulado</button>
+          `}
+        </div>
+      </div>
+
+      ${running && it ? `
+        <div class="hr"></div>
+        <div class="statcard">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div>
+              <div class="h">Questão ${idx+1}/${session.items.length}</div>
+              <div class="tiny muted"><b>${escapeHtml(it.disc || "(sem disciplina)")}</b>${it.topic?` • ${escapeHtml(it.topic)}`:""}</div>
+            </div>
+            <div class="badge">${remaining} restantes</div>
+          </div>
+
+          <div class="note" style="margin-top:12px;white-space:pre-wrap;">${escapeHtml(it.qtext || "")}</div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+            <input id="simAns" class="input" placeholder="Sua resposta (opcional)" style="flex:1;min-width:240px;">
+            <input id="simNotes" class="input" placeholder="Notas rápidas (opcional)" style="flex:2;min-width:260px;">
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+            <button class="btn primary" id="simRight">Acertei</button>
+            <button class="btn" id="simWrong">Errei</button>
+          </div>
+        </div>
+      ` : ``}
+
+      
+      ${(!running && session.done) ? renderReport() : ``}
+
+    `;
+
+    const simN = document.getElementById("simN");
+    const simT = document.getElementById("simT");
+    const simMode = document.getElementById("simMode");
+    const startBtn = document.getElementById("simStart");
+    const stopBtn = document.getElementById("simStop");
+
+    if(simN) simN.onchange = ()=>{ session.total = Number(simN.value)||20; };
+    if(simT) simT.onchange = ()=>{ session.timeLimitMin = Number(simT.value)||60; };
+    if(simMode) simMode.onchange = ()=>{ session.mode = simMode.value; };
+
+    if(startBtn) startBtn.onclick = ()=>{
+      session.total = Number(simN.value)||20;
+      session.timeLimitMin = Number(simT.value)||60;
+      session.mode = simMode.value;
+      buildSession();
+    };
+    if(stopBtn) stopBtn.onclick = ()=> stopSession();
+
+    const rBtn = document.getElementById("simRight");
+    const wBtn = document.getElementById("simWrong");
+    if(rBtn) rBtn.onclick = ()=> recordAnswer(true);
+    if(wBtn) wBtn.onclick = ()=> recordAnswer(false);
+  }
+
+  function renderReport(){
+    const state = store.getState();
+    const active = getActiveExam();
+    const examName = (EXAMS[active] && EXAMS[active].name) ? EXAMS[active].name : active;
+
+    const simQuestions = filterByExam(state.questions || []).slice(0, session.total);
+
+    const total = session.items.length;
+    const correct = simQuestions.filter(q=>q.isCorrect===true).length;
+    const wrong = total - correct;
+    const percent = total ? Math.round((correct/total)*100) : 0;
+
+    // discipline breakdown
+    const discMap = {};
+    for(const q of simQuestions){
+      const d = q.disc || "(sem disciplina)";
+      if(!discMap[d]) discMap[d] = { total:0, correct:0 };
+      discMap[d].total++;
+      if(q.isCorrect===true) discMap[d].correct++;
+    }
+
+    const rows = Object.entries(discMap).map(([disc,data])=>{
+      const err = data.total - data.correct;
+      const pct = data.total ? Math.round((data.correct/data.total)*100) : 0;
+      return `<tr>
+        <td>${escapeHtml(disc)}</td>
+        <td>${data.correct}/${data.total}</td>
+        <td>${pct}%</td>
+        <td>${err}</td>
+      </tr>`;
+    }).join("");
+
+    return `
+      <div class="section-title">
+        <h2>Relatório do Simulado</h2>
+        <div class="tiny muted">Concurso: <b>${escapeHtml(examName)}</b></div>
+      </div>
+
+      <div class="statgrid">
+        <div class="statcard">
+          <div class="h">Resultado Geral</div>
+          <div class="v">${correct}/${total}</div>
+          <div class="tiny muted">${percent}% de acerto</div>
+        </div>
+        <div class="statcard">
+          <div class="h">Erros</div>
+          <div class="v">${wrong}</div>
+          <div class="tiny muted">Total de questões erradas</div>
+        </div>
+        <div class="statcard">
+          <div class="h">Tempo</div>
+          <div class="v">${Math.floor((Date.now()-session.startedAt)/60000)} min</div>
+          <div class="tiny muted">Tempo utilizado</div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="statcard">
+        <div class="h">Desempenho por Disciplina</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Disciplina</th>
+              <th>Acertos</th>
+              <th>%</th>
+              <th>Erros</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="hr"></div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn primary" onclick="go('sim')">Novo Simulado</button>
+        <button class="btn" onclick="go('dashboard')">Voltar ao Dashboard</button>
+      </div>
+    `;
+  }
+
+
+  render();
+  return ()=>{};
+}
+
+function mountQuestions(){
+  let lastCreated = { errorId:"", trapId:"" };
+
+  function render(){
+    const state = store.getState();
+    const qs = Array.isArray(state.questions) ? state.questions : [];
+    const answered = qs.filter(q=> q.isCorrect !== null).length;
+    const correct = qs.filter(q=> q.isCorrect === true).length;
+    const acc = answered ? Math.round((correct/answered)*100) : 0;
+
+    function groupKey(disc, topic){ return (disc||"").trim()+"||"+(topic||"").trim(); }
+
+    function renderStats(qs){
+      const answered = qs.filter(q=> q.isCorrect !== null).length;
+      const correct = qs.filter(q=> q.isCorrect === true).length;
+      const acc = answered ? Math.round((correct/answered)*100) : 0;
+      const wrong = qs.filter(q=> q.isCorrect === false).length;
+
+      // by discipline
+      const byDisc = new Map();
+      const byTopic = new Map();
+      for(const q of qs){
+        const d = (q.disc||"(sem disciplina)").trim() || "(sem disciplina)";
+        const t = (q.topic||"(sem assunto)").trim() || "(sem assunto)";
+        if(!byDisc.has(d)) byDisc.set(d, { total:0, ans:0, right:0, wrong:0 });
+        if(!byTopic.has(groupKey(d,t))) byTopic.set(groupKey(d,t), { disc:d, topic:t, total:0, ans:0, right:0, wrong:0 });
+        const dd = byDisc.get(d);
+        const tt = byTopic.get(groupKey(d,t));
+        dd.total++; tt.total++;
+        if(q.isCorrect !== null){
+          dd.ans++; tt.ans++;
+          if(q.isCorrect){ dd.right++; tt.right++; } else { dd.wrong++; tt.wrong++; }
+        }
+      }
+
+      const discRows = Array.from(byDisc.entries()).map(([k,v])=>{
+        const a = v.ans ? Math.round((v.right/v.ans)*100) : 0;
+        return { disc:k, ...v, acc:a };
+      }).sort((a,b)=> (b.wrong - a.wrong) || (b.total - a.total)).slice(0,6);
+
+      const topicRows = Array.from(byTopic.values()).map(v=>{
+        const a = v.ans ? Math.round((v.right/v.ans)*100) : 0;
+        return { ...v, acc:a };
+      }).sort((a,b)=> (b.wrong - a.wrong) || (b.total - a.total)).slice(0,8);
+
+      return `
+        <div class="statgrid">
+          <div class="statcard" style="background:var(--blue);">
+            <div class="h">Acurácia geral</div>
+            <div class="v">${acc}%</div>
+            <div class="bar" style="margin-top:10px;"><div style="width:${acc}%;"></div></div>
+            <div class="tiny muted" style="margin-top:8px;">Respondidas: ${answered} • Acertos: ${correct} • Erros: ${wrong}</div>
+          </div>
+          <div class="statcard" style="background:var(--lav);">
+            <div class="h">Top disciplinas com mais erros</div>
+            ${discRows.length ? discRows.map(r=>`
+              <div style="margin-top:10px;">
+                <div class="tiny muted"><b>${escapeHtml(r.disc)}</b> — erros: ${r.wrong} • acurácia: ${r.acc}%</div>
+                <div class="bar"><div style="width:${r.acc}%;"></div></div>
+              </div>
+            `).join("") : `<div class="note" style="margin-top:10px;">Registre questões para ver estatísticas.</div>`}
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <details open class="compact">
+          <summary><span>Top assuntos com mais erros</span><span class="chev">⌄</span></summary>
+          <div style="margin-top:10px;">
+            ${topicRows.length ? `
+              <table>
+                <thead><tr><th>Disc / Assunto</th><th>Erros</th><th>Acurácia</th></tr></thead>
+                <tbody>
+                  ${topicRows.map(r=>`
+                    <tr>
+                      <td><b>${escapeHtml(r.disc)}</b><div class="tiny muted">${escapeHtml(r.topic)}</div></td>
+                      <td><span class="badge overdue">${r.wrong}</span><div class="tiny muted">total: ${r.total}</div></td>
+                      <td><span class="badge">${r.acc}%</span></td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            ` : `<div class="note">Ainda sem dados suficientes.</div>`}
+          </div>
+        </details>
+      `;
+    }
+
+
+    app.innerHTML = `
+      <div class="grid">
+        <div class="card">
+          <div class="section-title">
+            <h2>Questões por matéria</h2>
+            <span class="pill">Acurácia: <b>${acc}%</b> • Respondidas: <b>${answered}</b></span>
+          </div>
+
+          <div class="note">
+            Registre uma questão e marque se acertou/errou. Se <b>errar</b>, você pode gerar automaticamente um item no <b>Caderno de Erros</b>.
+            Se houver “pegadinha”, pode salvar também no módulo <b>Pegadinhas</b>.
+          </div>
+
+          <div class="hr"></div>
+
+          <details open class="compact">
+            <summary><span>Novo registro</span><span class="chev">⌄</span></summary>
+            <div style="margin-top:10px;">
+              <div class="row">
+                <div><label>Disciplina</label><input id="qDisc" placeholder="Ex.: Constitucional" /></div>
+                <div><label>Assunto</label><input id="qTopic" placeholder="Ex.: Direitos fundamentais" /></div>
+              </div>
+
+              <div class="row">
+                <div><label>Banca</label><input id="qBank" placeholder="Ex.: FCC" /></div>
+                <div><label>Fonte (opcional)</label><input id="qSource" placeholder="PDF / Curso / Site / Prova X" /></div>
+              </div>
+
+              <div class="row">
+                <div>
+                  <label>Dificuldade</label>
+                  <select id="qDiff">
+                    <option value="">(não informar)</option>
+                    <option>Fácil</option><option>Média</option><option>Difícil</option>
+                  </select>
+                </div>
+                <div><label>Tempo (min, opcional)</label><input id="qTime" type="number" min="0" step="1" placeholder="Ex.: 3" /></div>
+              </div>
+
+              <label>Enunciado / trecho (cole aqui)</label>
+              <textarea id="qText" placeholder="Cole o enunciado ou o ponto chave da questão..."></textarea>
+
+              <div class="row">
+                <div><label>Gabarito (opcional)</label><input id="qKey" placeholder="Ex.: C" /></div>
+                <div><label>Sua resposta (opcional)</label><input id="qAns" placeholder="Ex.: D" /></div>
+              </div>
+
+              <div class="row">
+                <div>
+                  <label>Resultado (rápido)</label>
+                  <div class="seg">
+                    <button class="btn" type="button" id="qBtnRight">Acertei ✓</button>
+                    <button class="btn" type="button" id="qBtnWrong">Errei ✗</button>
+                    <button class="btn" type="button" id="qBtnClearRes">Limpar</button>
+                  </div>
+                  <div style="margin-top:8px;">
+                    <select id="qRes">
+                      <option value="">(não marcar)</option>
+                      <option value="true">Acertei</option>
+                      <option value="false">Errei</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label>Tags (rápido)</label>
+                  <input id="qTags" placeholder="Ex.: pegadinha, exceção, competência" />
+                  <div class="chips" style="margin-top:8px;">
+                    <button class="chip" type="button" data-tag="pegadinha">pegadinha</button>
+                    <button class="chip" type="button" data-tag="exceção">exceção</button>
+                    <button class="chip" type="button" data-tag="competência">competência</button>
+                    <button class="chip" type="button" data-tag="prazo">prazo</button>
+                    <button class="chip" type="button" data-tag="recurso">recurso</button>
+                    <button class="chip" type="button" data-tag="conceito">conceito</button>
+                  </div>
+                </div>
+              </div>
+
+              <label>Notas (opcional)</label>
+              <textarea id="qNotes" placeholder="Por que errou? qual regra? qual macete?"></textarea>
+
+              <div class="row">
+                <div>
+                  <label><input id="mkError" type="checkbox" checked /> Se errei, criar no Caderno de Erros</label>
+                  <div class="tiny muted">Agenda inicial: Amanhã (você ajusta depois).</div>
+                </div>
+                <div>
+                  <label><input id="mkTrap" type="checkbox" /> Se houver pegadinha, salvar em Pegadinhas</label>
+                  <div class="tiny muted">Usa o texto + notas como correção.</div>
+                </div>
+              </div>
+
+              <div class="btnbar">
+                <button class="btn primary" id="qSave">Salvar registro</button>
+                <button class="btn" id="qClear">Limpar</button>
+              </div>
+
+              ${lastCreated.errorId || lastCreated.trapId ? `
+                <div class="hr"></div>
+                <div class="note">
+                  Criado agora:
+                  ${lastCreated.errorId ? `<span class="badge">Erro ✓</span>` : ``}
+                  ${lastCreated.trapId ? `<span class="badge">Pegadinha ✓</span>` : ``}
+                </div>
+              ` : ``}
+            </div>
+          </details>
+
+        </div>
+
+        <div class="card">
+          <div class="section-title">
+            <h2>Estatísticas</h2>
+            <span class="pill">Total: <b>${qs.length}</b></span>
+          </div>
+
+          ${renderStats(qs)}
+
+          <div class="hr"></div>
+
+          <div class="section-title">
+            <h2>Histórico</h2>
+            <span class="pill">Total: <b>${qs.length}</b></span>
+          </div>
+
+          <details open class="compact">
+            <summary><span>Lista + filtros</span><span class="chev">⌄</span></summary>
+            <div style="margin-top:10px;">
+              <div class="row">
+                <div><label>Filtro disciplina</label><input id="qFilterDisc" placeholder="(vazio = tudo)" /></div>
+                <div><label>Filtro banca</label><input id="qFilterBank" placeholder="(vazio = tudo)" /></div>
+              </div>
+              <div class="row">
+                <div><label>Mostrar</label>
+                  <select id="qFilterRes">
+                    <option value="">Tudo</option>
+                    <option value="true">Só acertos</option>
+                    <option value="false">Só erros</option>
+                    <option value="null">Sem marcar</option>
+                  </select>
+                </div>
+                <div><label>Ordenar</label>
+                  <select id="qSort">
+                    <option value="new">Mais recentes</option>
+                    <option value="old">Mais antigas</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="qTable" class="compact"></div>
+            </div>
+          </details>
+
+        </div>
+      </div>
+    `;
+
+    // bind
+    const qTable = document.getElementById("qTable");
+    const fDisc = document.getElementById("qFilterDisc");
+    const fBank = document.getElementById("qFilterBank");
+    const fRes  = document.getElementById("qFilterRes");
+    const fSort = document.getElementById("qSort");
+
+    function renderTable(){
+      const s = store.getState();
+      let rows = (s.questions || []).slice();
+      const fd = safeString(fDisc.value).trim().toLowerCase();
+      const fb = safeString(fBank.value).trim().toLowerCase();
+      const fr = fRes.value;
+
+      rows = rows.filter(q=>{
+        const okD = !fd || (q.disc||"").toLowerCase().includes(fd);
+        const okB = !fb || (q.bank||"").toLowerCase().includes(fb);
+        let okR = true;
+        if(fr === "true") okR = q.isCorrect === true;
+        else if(fr === "false") okR = q.isCorrect === false;
+        else if(fr === "null") okR = q.isCorrect === null;
+        return okD && okB && okR;
+      });
+
+      rows.sort((a,b)=>{
+        const da = new Date(a.createdAt).getTime();
+        const db = new Date(b.createdAt).getTime();
+        return (fSort.value === "old") ? (da - db) : (db - da);
+      });
+
+      if(rows.length === 0){
+        qTable.innerHTML = `<div class="note">Nenhum registro ainda.</div>`;
+        return;
+      }
+
+      qTable.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Disc / Assunto</th>
+              <th>Resultado</th>
+              <th>Data</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(q=>{
+              const badge = (q.isCorrect === true) ? `<span class="badge" style="background: var(--green);">acerto</span>`
+                          : (q.isCorrect === false) ? `<span class="badge overdue">erro</span>`
+                          : `<span class="badge">—</span>`;
+              const links = [
+                q.createdErrorId ? `<span class="badge">erro✓</span>` : ``,
+                q.createdTrapId ? `<span class="badge">trap✓</span>` : ``,
+              ].join(" ");
+              return `
+                <tr>
+                  <td>
+                    <div><b>${escapeHtml(q.disc || "(sem disciplina)")}</b></div>
+                    <div class="tiny muted">${escapeHtml(q.topic || "(sem assunto)")}</div>
+                    <div class="tiny muted">banca: ${escapeHtml(q.bank || "-")} ${q.source ? "• fonte: "+escapeHtml(q.source) : ""}</div>
+                    ${q.tags && q.tags.length ? `<div class="tiny muted">tags: ${q.tags.map(t=>escapeHtml(t)).join(", ")}</div>` : ``}
+                    ${links ? `<div class="tiny muted" style="margin-top:4px;">${links}</div>` : ``}
+                  </td>
+                  <td>
+                    ${badge}
+                    <div class="tiny muted" style="margin-top:6px;">${q.userAnswer ? "resp: "+escapeHtml(q.userAnswer) : ""} ${q.answerKey ? "• gab: "+escapeHtml(q.answerKey) : ""}</div>
+                  </td>
+                  <td>
+                    <div>${fmtDate(q.createdAt)}</div>
+                    <div class="tiny muted">${q.timeMin != null ? q.timeMin+" min" : ""} ${q.difficulty ? "• "+escapeHtml(q.difficulty) : ""}</div>
+                  </td>
+                  <td>
+                    <div class="actions">
+                      <button class="btn" data-act="open" data-id="${q.id}">Ver</button>
+                      <button class="btn danger" data-act="del" data-id="${q.id}">Excluir</button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+
+      qTable.querySelectorAll("button[data-act]").forEach(b=>{
+        b.onclick = ()=>{
+          const act = b.getAttribute("data-act");
+          const id  = b.getAttribute("data-id");
+          const item = (store.getState().questions || []).find(x=>x.id===id);
+          if(!item) return;
+          if(act==="del"){
+            if(confirm("Excluir este registro de questão?")){
+              store.dispatch({ type: A.Q_DELETE, id });
+              toast("Excluído");
+            }
+            return;
+          }
+          if(act==="open"){
+            // Preenche o form (modo edição leve: você pode salvar como novo registro)
+            document.getElementById("qDisc").value = item.disc || "";
+            document.getElementById("qTopic").value = item.topic || "";
+            document.getElementById("qBank").value = item.bank || "";
+            document.getElementById("qSource").value = item.source || "";
+            document.getElementById("qDiff").value = item.difficulty || "";
+            document.getElementById("qTime").value = (item.timeMin != null) ? item.timeMin : "";
+            document.getElementById("qText").value = item.qtext || "";
+            document.getElementById("qKey").value = item.answerKey || "";
+            document.getElementById("qAns").value = item.userAnswer || "";
+            document.getElementById("qRes").value = (item.isCorrect === true) ? "true" : (item.isCorrect === false) ? "false" : "";
+            document.getElementById("qTags").value = (item.tags||[]).join(", ");
+            document.getElementById("qNotes").value = item.notes || "";
+            toast("Carregado no formulário");
+          }
+        };
+      });
+    }
+
+    if(fDisc) fDisc.oninput = renderTable;
+    if(fBank) fBank.oninput = renderTable;
+    if(fRes)  fRes.onchange = renderTable;
+    if(fSort) fSort.onchange = renderTable;
+
+    renderTable();
+
+    // Quick result buttons
+    const qResSel = document.getElementById("qRes");
+    const btnR = document.getElementById("qBtnRight");
+    const btnW = document.getElementById("qBtnWrong");
+    const btnC = document.getElementById("qBtnClearRes");
+    if(btnR) btnR.onclick = ()=>{ qResSel.value = "true"; toast("Marcado: acerto"); };
+    if(btnW) btnW.onclick = ()=>{ qResSel.value = "false"; toast("Marcado: erro"); };
+    if(btnC) btnC.onclick = ()=>{ qResSel.value = ""; toast("Resultado limpo"); };
+
+    // Tag chips
+    const tagInput = document.getElementById("qTags");
+    document.querySelectorAll("button.chip[data-tag]").forEach(ch=>{
+      ch.onclick = ()=>{
+        const t = ch.getAttribute("data-tag");
+        const cur = (tagInput.value||"").split(",").map(x=>x.trim()).filter(Boolean);
+        if(!cur.includes(t)) cur.push(t);
+        tagInput.value = cur.join(", ");
+      };
+    });
+
+    document.getElementById("qClear").onclick = ()=>{
+      ["qDisc","qTopic","qBank","qSource","qText","qKey","qAns","qTags","qNotes","qTime"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
+      document.getElementById("qDiff").value = "";
+      document.getElementById("qRes").value = "";
+      document.getElementById("mkError").checked = true;
+      document.getElementById("mkTrap").checked = false;
+      lastCreated = { errorId:"", trapId:"" };
+      toast("Limpo");
+    };
+
+    document.getElementById("qSave").onclick = ()=>{
+      const now = new Date();
+      const disc = safeString(document.getElementById("qDisc").value).trim();
+      const topic = safeString(document.getElementById("qTopic").value).trim();
+      const bank = safeString(document.getElementById("qBank").value).trim();
+      const source = safeString(document.getElementById("qSource").value).trim();
+      const difficulty = safeString(document.getElementById("qDiff").value).trim();
+      const timeMinRaw = safeString(document.getElementById("qTime").value).trim();
+      const qtext = safeString(document.getElementById("qText").value).trim();
+      const answerKey = safeString(document.getElementById("qKey").value).trim();
+      const userAnswer = safeString(document.getElementById("qAns").value).trim();
+      const res = safeString(document.getElementById("qRes").value);
+      const tags = safeString(document.getElementById("qTags").value).split(",").map(x=>x.trim()).filter(Boolean).slice(0,10);
+      const notes = safeString(document.getElementById("qNotes").value).trim();
+
+      const isCorrect = (res === "true") ? true : (res === "false") ? false : null;
+      const timeMin = timeMinRaw ? Math.max(0, Number(timeMinRaw)) : null;
+
+      if(!disc && !topic && !qtext){
+        toast("Preencha ao menos Disciplina/Assunto ou cole o texto.");
+        return;
+      }
+
+      let createdErrorId = "";
+      let createdTrapId = "";
+
+      const shouldMakeError = document.getElementById("mkError").checked;
+      const shouldMakeTrap = document.getElementById("mkTrap").checked;
+
+      // Create Error if wrong + checked
+      if(isCorrect === false && shouldMakeError){
+        const errId = uid();
+        const cause = notes || "Errei a questão (registrado via módulo Questões).";
+        const nextReviewAt = addDays(startOfDay(now), 1).toISOString(); // Amanhã
+        store.dispatch({ type: A.ERROR_ADD, payload: {
+          id: errId, createdAt: now.toISOString(),
+          disc, topic, bank,
+          cause,
+          notes: qtext ? ("Questão/trecho:\n" + qtext + (answerKey||userAnswer ? `\n\nGab: ${answerKey || "-"} | Resp: ${userAnswer || "-"}` : "")) : "",
+          mistakeType:"", nextReviewAt, reviewHistory:[]
+        }});
+        createdErrorId = errId;
+      }
+
+      // Create Trap if checked
+      if(shouldMakeTrap){
+        const payload = {
+          disc, topic, bank: bank || "AUTO",
+          type: "Ambígua/dupla interpretação",
+          text: qtext || (disc + " — " + topic),
+          fix: notes || ""
+        };
+        const trap = analyzeTrapPayload(payload);
+        store.dispatch({ type: A.TRAP_ADD, payload: trap });
+        createdTrapId = trap.id;
+      }
+
+      const qId = uid();
+      store.dispatch({ type: A.Q_ADD, payload: {
+        id: qId, createdAt: now.toISOString(),
+        disc, topic, bank, source,
+        qtext, answerKey, userAnswer, isCorrect,
+        difficulty, timeMin, notes, tags,
+        createdErrorId, createdTrapId
+      }});
+
+      lastCreated = { errorId: createdErrorId, trapId: createdTrapId };
+      toast("Registro salvo ✓");
+      render(); // re-render to update stats & show created badges
+    };
+  }
+
+  render();
+  const unsub = store.subscribe(()=>{ if(currentTab==="questions") render(); });
+  return ()=> unsub();
+}
+
+function mountSettings(){
+  function render(){
+    const state = store.getState();
+    const json = JSON.stringify(state, null, 2);
+
+    
+    const metaRaw = localStorage.getItem(STORAGE_META_KEY);
+    let meta = null;
+    try{ meta = metaRaw ? JSON.parse(metaRaw) : null; }catch{ meta = null; }
+    const savedAt = meta && meta.savedAt ? new Date(meta.savedAt) : null;
+    const restoredAt = meta && meta.restoredAt ? new Date(meta.restoredAt) : null;
+app.innerHTML = `
+      <div class="card">
+        <div class="section-title">
+          <h2>Backup / Importação</h2>
+          <span class="pill">Chave: <b>${STORAGE_KEY}</b></span>
+        </div>
+
+        <div class="note">Faça backup em JSON e restaure quando quiser.</div>
+
+        <div class="hr"></div>
+
+        <div class="btnbar">
+          <button class="btn primary" id="export">Exportar JSON</button>
+          <button class="btn" id="copy">Copiar JSON</button>
+          <button class="btn danger" id="reset">Resetar (apagar tudo)</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <label>Importar JSON</label>
+        <textarea id="importBox" placeholder="Cole aqui o JSON exportado..."></textarea>
+        <div class="btnbar"><button class="btn primary" id="import">Importar</button></div>
+
+        <div class="hr"></div>
+
+        <label>Estado atual (somente leitura)</label>
+        <textarea readonly>${escapeHtml(json)}</textarea>
+      </div>
+    `;
+
+    document.getElementById("export").onclick = ()=>{
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `SAPE_backup_${STATE_VERSION}_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast("Backup exportado");
+    };
+
+    document.getElementById("copy").onclick = async ()=>{
+      try{ await navigator.clipboard.writeText(json); toast("JSON copiado"); }
+      catch{ toast("Não deu para copiar (permissão do navegador)."); }
+    };
+
+    document.getElementById("import").onclick = ()=>{
+      const txt = document.getElementById("importBox").value;
+      try{
+        store.dispatch({ type: A.STATE_IMPORT, payload: JSON.parse(txt) });
+        toast("Importado ✓");
+        document.getElementById("importBox").value = "";
+      }catch{ toast("JSON inválido."); }
+    };
+
+    document.getElementById("reset").onclick = ()=>{
+      if(confirm("Tem certeza? Isso apaga todo o progresso desta versão V7.")){
+        store.dispatch({ type: A.STATE_RESET });
+        toast("Resetado.");
+      }
+    };
+  }
+
+  render();
+  const unsub = store.subscribe(()=>{ if(currentTab==="settings") render(); });
+  return ()=> unsub();
+}
+
+/* =========================
+   BOOT
+========================= */
+safeCall(()=>go("dashboard"), "go(dashboard)");
+
+// ---- PCPR Fixed Weight Multiplier ----
+if (typeof computeDisciplineWeightMap === "function") {
+  const _baseCompute = computeDisciplineWeightMap;
+  computeDisciplineWeightMap = function(state){
+    const map = _baseCompute(state);
+    const exam = EXAMS[getActiveExam()];
+    if(exam && exam.weights){
+      Object.entries(exam.weights).forEach(([disc, fixedWeight])=>{
+        const current = map.get(disc) || 1;
+        map.set(disc, current * fixedWeight);
+      });
+    }
+    return map;
+  };
+}
+// ---- End PCPR Multiplier ----
+
+</script>
+</body>
+</html>
