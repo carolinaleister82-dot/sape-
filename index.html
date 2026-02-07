@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estudo OS - Sync</title>
+
+<style>
+body{margin:0;background:#0e1424;color:#fff;font-family:system-ui}
+header{padding:15px;border-bottom:1px solid #222;display:flex;justify-content:space-between}
+button,input,select,textarea{
+background:#18223c;color:#fff;border:1px solid #2a375a;
+border-radius:8px;padding:8px;margin-top:6px
+}
+button{cursor:pointer}
+button.primary{background:#3b5bfd}
+.card{background:#141e36;padding:15px;border-radius:12px;margin-bottom:15px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.kpi{background:#10182c;padding:10px;border-radius:8px}
+</style>
+</head>
+<body>
+
+<header>
+<h3>Estudo OS (Sync)</h3>
+<div>
+<span id="status">offline</span>
+<button onclick="logout()">Sair</button>
+</div>
+</header>
+
+<div style="padding:15px" id="app"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+
+<script>
+
+/* ========= COLE AQUI SEU firebaseConfig ========= */
+
+const firebaseConfig = {
+  apiKey: "COLE_AQUI",
+  authDomain: "COLE_AQUI",
+  projectId: "COLE_AQUI",
+  storageBucket: "COLE_AQUI",
+  messagingSenderId: "COLE_AQUI",
+  appId: "COLE_AQUI"
+};
+
+/* ================================================ */
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+
+let UID = null;
+let STATE = null;
+let UNSUB = null;
+
+function blankState(){
+return{
+user:null,
+tasks:{},
+errors:[],
+cards:[],
+logs:[]
+};
+}
+
+function stateRef(uid){
+return db.doc(`users/${uid}/app/state`);
+}
+
+auth.onAuthStateChanged(async user=>{
+if(!user){
+UID=null;
+STATE=null;
+renderLogin();
+return;
+}
+UID=user.uid;
+await ensureDoc();
+subscribe();
+});
+
+async function ensureDoc(){
+const snap = await stateRef(UID).get();
+if(!snap.exists){
+await stateRef(UID).set(blankState());
+}
+}
+
+function subscribe(){
+if(UNSUB)UNSUB();
+UNSUB = stateRef(UID).onSnapshot(snap=>{
+STATE=snap.data();
+document.getElementById("status").innerText="online";
+if(!STATE.user) renderSetup();
+else renderHome();
+});
+}
+
+function save(){
+stateRef(UID).set(STATE,{merge:true});
+}
+
+function logout(){
+auth.signOut();
+}
+
+function renderLogin(){
+document.getElementById("app").innerHTML=`
+<div class="card">
+<h3>Login</h3>
+<input id="email" placeholder="Email">
+<input id="pass" type="password" placeholder="Senha">
+<br><br>
+<button class="primary" onclick="login()">Entrar</button>
+<button onclick="register()">Criar Conta</button>
+</div>
+`;
+}
+
+function login(){
+auth.signInWithEmailAndPassword(
+email.value,pass.value
+).catch(e=>alert(e.message));
+}
+
+function register(){
+auth.createUserWithEmailAndPassword(
+email.value,pass.value
+).catch(e=>alert(e.message));
+}
+
+function renderSetup(){
+document.getElementById("app").innerHTML=`
+<div class="card">
+<h3>Setup</h3>
+<input id="nome" placeholder="Seu nome">
+<select id="cargo">
+<option value="TRT">TRT Analista</option>
+<option value="RFB">Auditor Receita</option>
+<option value="INSS_A">INSS Analista</option>
+<option value="INSS_T">INSS Técnico</option>
+</select>
+<input type="date" id="inicio">
+<select id="meta">
+<option value="0.9">90%</option>
+<option value="0.85">85%</option>
+</select>
+<br><br>
+<button class="primary" onclick="salvarSetup()">Salvar</button>
+</div>
+`;
+}
+
+function salvarSetup(){
+STATE.user={
+nome:nome.value,
+cargo:cargo.value,
+inicio:inicio.value,
+meta:parseFloat(meta.value)
+};
+save();
+}
+
+function renderHome(){
+let revisoesHoje = STATE.cards.filter(c=>c.due<=today()).length;
+let erros = STATE.errors.length;
+
+document.getElementById("app").innerHTML=`
+<div class="card">
+<h3>Olá ${STATE.user.nome}</h3>
+<button onclick="renderErros()">Caderno de Erros</button>
+<button onclick="renderFlashcards()">Flashcards</button>
+</div>
+
+<div class="card">
+<div class="kpis">
+<div class="kpi">Erros<br><b>${erros}</b></div>
+<div class="kpi">Revisões Hoje<br><b>${revisoesHoje}</b></div>
+</div>
+</div>
+`;
+}
+
+function renderErros(){
+document.getElementById("app").innerHTML=`
+<div class="card">
+<h3>Novo Erro</h3>
+<textarea id="pergunta" placeholder="Pergunta"></textarea>
+<textarea id="resposta" placeholder="Resposta Correta"></textarea>
+<button class="primary" onclick="salvarErro()">Salvar</button>
+</div>
+<button onclick="renderHome()">Voltar</button>
+`;
+}
+
+function salvarErro(){
+let erro={
+id:crypto.randomUUID(),
+pergunta:pergunta.value,
+resposta:resposta.value,
+data:today()
+};
+STATE.errors.push(erro);
+
+STATE.cards.push({
+id:crypto.randomUUID(),
+front:erro.pergunta,
+back:erro.resposta,
+due:today(),
+stability:1,
+difficulty:6
+});
+
+save();
+renderHome();
+}
+
+function renderFlashcards(){
+let hojeCards=STATE.cards.filter(c=>c.due<=today());
+if(!hojeCards.length){
+document.getElementById("app").innerHTML=
+`<div class="card">Nada para revisar</div>
+<button onclick="renderHome()">Voltar</button>`;
+return;
+}
+
+let c=hojeCards[0];
+document.getElementById("app").innerHTML=`
+<div class="card">
+<h3>${c.front}</h3>
+<hr>
+<p>${c.back}</p>
+<button onclick="avaliar('${c.id}','again')">Again</button>
+<button onclick="avaliar('${c.id}','good')" class="primary">Good</button>
+<button onclick="avaliar('${c.id}','easy')">Easy</button>
+</div>
+`;
+}
+
+function avaliar(id,tipo){
+let c=STATE.cards.find(x=>x.id===id);
+let mult = tipo==="again"?0.5: tipo==="good"?2:3;
+c.stability*=mult;
+c.due=addDays(today(),Math.round(c.stability));
+save();
+renderFlashcards();
+}
+
+function today(){
+return new Date().toISOString().slice(0,10);
+}
+
+function addDays(date,days){
+let d=new Date(date);
+d.setDate(d.getDate()+days);
+return d.toISOString().slice(0,10);
+}
+
+</script>
+</body>
+</html>
