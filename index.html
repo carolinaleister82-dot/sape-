@@ -1,0 +1,1264 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>StudyOS 3.0 — MattarLeister</title>
+
+<style>
+  /* ========= Design Tokens ========= */
+  :root{
+    --bg0:#07080a;
+    --bg1:#0b0d11;
+    --card:#0f1218cc;
+    --card2:#0f1218;
+    --stroke:#1b2230;
+    --stroke2:#263146;
+    --text:#e8edf6;
+    --muted:#aab4c3;
+    --muted2:#7f8aa0;
+
+    --accent:#6ee7ff;      /* azul gelo */
+    --accent2:#a78bfa;     /* lilás */
+    --good:#34d399;
+    --warn:#fbbf24;
+    --bad:#fb7185;
+
+    --shadow: 0 20px 60px rgba(0,0,0,.45);
+    --blur: 18px;
+    --r: 18px;
+
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  }
+
+  /* Light mode (opcional) */
+  [data-theme="light"]{
+    --bg0:#f6f7fb;
+    --bg1:#ffffff;
+    --card:#ffffffcc;
+    --card2:#ffffff;
+    --stroke:#e6e9f2;
+    --stroke2:#d8deec;
+    --text:#0f172a;
+    --muted:#42526a;
+    --muted2:#6b7a90;
+    --shadow: 0 20px 60px rgba(15,23,42,.12);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:var(--sans);
+    background:
+      radial-gradient(900px 500px at 20% 10%, rgba(110,231,255,.12), transparent 60%),
+      radial-gradient(900px 500px at 80% 30%, rgba(167,139,250,.10), transparent 55%),
+      radial-gradient(1100px 700px at 60% 90%, rgba(52,211,153,.07), transparent 55%),
+      linear-gradient(180deg, var(--bg0), var(--bg1));
+    color:var(--text);
+    overflow:hidden;
+  }
+
+  .app{height:100%; display:grid; grid-template-columns: 320px 1fr;}
+
+  /* ========= Sidebar ========= */
+  .side{
+    position:relative;
+    border-right:1px solid var(--stroke);
+    padding:18px 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,.03), transparent 28%);
+  }
+  .brand{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 10px 14px 10px;}
+  .logo{
+    width:40px;height:40px;border-radius:14px;
+    background: radial-gradient(circle at 30% 30%, rgba(110,231,255,.85), rgba(167,139,250,.55));
+    box-shadow: 0 10px 30px rgba(110,231,255,.10);
+    border:1px solid rgba(255,255,255,.12);
+  }
+  .brand h1{margin:0; font-size:14px; letter-spacing:.2px;}
+  .brand .sub{margin-top:2px; font-size:12px; color:var(--muted2);}
+  .pill{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:8px 10px; border-radius:999px;
+    border:1px solid var(--stroke);
+    background:rgba(15,18,24,.45);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    box-shadow: var(--shadow);
+    font-size:12px; color:var(--muted);
+  }
+  [data-theme="light"] .pill{background:rgba(255,255,255,.70)}
+  .dot{width:8px;height:8px;border-radius:999px;background:var(--good); box-shadow:0 0 0 4px rgba(52,211,153,.12);}
+
+  .groupTitle{
+    margin:18px 10px 8px 10px;
+    font-size:11px; color:var(--muted2);
+    letter-spacing:.22em; text-transform:uppercase;
+  }
+  .nav{display:flex; flex-direction:column; gap:8px;}
+  .nav button{
+    width:100%;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; padding:12px 12px;
+    border-radius:14px;
+    border:1px solid transparent;
+    background:transparent;
+    color:var(--text);
+    cursor:pointer;
+    transition:transform .12s ease, background .12s ease, border-color .12s ease;
+  }
+  .nav button:hover{background: rgba(255,255,255,.04); border-color: var(--stroke); transform: translateY(-1px);}
+  .nav button.active{
+    background: linear-gradient(180deg, rgba(110,231,255,.12), rgba(167,139,250,.07));
+    border-color: rgba(110,231,255,.20);
+  }
+  .nav .left{display:flex; align-items:center; gap:10px; font-size:13px;}
+  .ico{
+    width:28px;height:28px;border-radius:10px;
+    display:grid;place-items:center;
+    border:1px solid var(--stroke);
+    background: rgba(15,18,24,.55);
+    color:var(--muted);
+  }
+  [data-theme="light"] .ico{background:rgba(255,255,255,.75)}
+  .badge{
+    font-size:11px;
+    padding:3px 8px;
+    border-radius:999px;
+    border:1px solid var(--stroke);
+    color:var(--muted);
+    background:rgba(15,18,24,.45);
+  }
+
+  .sideFooter{
+    position:absolute; left:16px; right:16px; bottom:16px;
+    padding:12px; border-radius:16px;
+    border:1px solid var(--stroke);
+    background: rgba(15,18,24,.45);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+  }
+  .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between;}
+  .miniBtn{
+    border:1px solid var(--stroke);
+    background:rgba(255,255,255,.03);
+    color:var(--text);
+    padding:8px 10px;
+    border-radius:12px;
+    cursor:pointer;
+    font-size:12px;
+    transition:filter .12s ease, transform .12s ease;
+  }
+  .miniBtn:hover{filter:brightness(1.08); transform:translateY(-1px)}
+  .miniBtn:active{transform:translateY(0)}
+
+  /* ========= Main ========= */
+  .main{height:100%; display:grid; grid-template-rows: 70px 1fr; overflow:hidden;}
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px;
+    border-bottom:1px solid var(--stroke);
+    background: linear-gradient(180deg, rgba(255,255,255,.02), transparent 60%);
+  }
+  .topbar .left{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .search{
+    width:min(520px, 56vw);
+    display:flex; align-items:center; gap:10px;
+    padding:10px 12px;
+    border-radius:16px;
+    border:1px solid var(--stroke);
+    background: rgba(15,18,24,.40);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+  }
+  [data-theme="light"] .search{background:rgba(255,255,255,.75)}
+  .search input{
+    width:100%;
+    border:none; outline:none;
+    background:transparent;
+    color:var(--text);
+    font-size:13px;
+  }
+  .kpis{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .kpi{
+    padding:10px 12px;
+    border:1px solid var(--stroke);
+    border-radius:16px;
+    background: rgba(15,18,24,.40);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    min-width:170px;
+  }
+  [data-theme="light"] .kpi{background:rgba(255,255,255,.75)}
+  .kpi b{display:block; font-size:12px}
+  .kpi span{display:block; margin-top:3px; font-size:12px; color:var(--muted)}
+  .accent{color:var(--accent)} .warn{color:var(--warn)} .good{color:var(--good)} .bad{color:var(--bad)}
+
+  /* ========= Content ========= */
+  .content{height:100%; overflow:auto; padding:18px;}
+  .grid{display:grid; grid-template-columns: 1.2fr .8fr; gap:14px;}
+  @media (max-width: 1100px){
+    .app{grid-template-columns: 1fr}
+    .side{display:none}
+    .grid{grid-template-columns:1fr}
+    body{overflow:auto}
+  }
+
+  .card{
+    border:1px solid var(--stroke);
+    border-radius: var(--r);
+    background: var(--card);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    box-shadow: var(--shadow);
+    padding:14px;
+  }
+  .card h2{margin:0; font-size:13px; letter-spacing:.2px;}
+  .card .sub{margin-top:6px; font-size:12px; color:var(--muted); line-height:1.4;}
+  .btn{
+    padding:10px 12px;
+    border-radius:14px;
+    border:1px solid var(--stroke);
+    background:rgba(255,255,255,.03);
+    color:var(--text);
+    cursor:pointer;
+    font-size:12px;
+    transition:transform .12s ease, filter .12s ease;
+  }
+  .btn:hover{filter:brightness(1.10); transform:translateY(-1px)}
+  .btn.primary{
+    border-color: rgba(110,231,255,.25);
+    background: linear-gradient(180deg, rgba(110,231,255,.10), rgba(167,139,250,.05));
+  }
+  .btn.ghost{background:transparent}
+
+  .heat{margin-top:12px; display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;}
+  .cell{
+    border:1px solid var(--stroke);
+    border-radius:16px;
+    padding:12px;
+    background: rgba(15,18,24,.35);
+    min-height:94px;
+  }
+  .cell b{font-size:12px}
+  .cell .mini{margin-top:6px; font-size:12px; color:var(--muted)}
+  .tag{
+    display:inline-flex; gap:8px; align-items:center;
+    margin-top:8px;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid var(--stroke);
+    font-size:11px;
+    color:var(--muted);
+    background: rgba(15,18,24,.35);
+  }
+  .tag .bar{width:10px;height:10px;border-radius:4px;background:var(--accent);}
+
+  .t10{margin-top:10px; display:flex; flex-direction:column; gap:8px;}
+  .tItem{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:12px;
+    border-radius:16px;
+    border:1px solid var(--stroke);
+    background: rgba(15,18,24,.35);
+  }
+  .tItem .l b{font-size:12px}
+  .tItem .l div{font-size:12px; color:var(--muted); margin-top:4px}
+  .tBadges{display:inline-flex; gap:6px; align-items:center}
+  .bchip{
+    font-size:11px;
+    padding:5px 8px;
+    border-radius:999px;
+    border:1px solid var(--stroke);
+    background: rgba(15,18,24,.35);
+    color:var(--muted);
+  }
+
+  /* ========= Toast ========= */
+  .toast-wrap{
+    position:fixed; right:16px; bottom:16px; z-index:99999;
+    display:flex; flex-direction:column; gap:10px; pointer-events:none;
+  }
+  .toast{
+    pointer-events:auto;
+    min-width:260px; max-width:360px;
+    border:1px solid var(--stroke);
+    border-radius:16px;
+    background: var(--card2);
+    color:var(--text);
+    padding:12px 12px;
+    box-shadow: var(--shadow);
+    transform:translateY(8px); opacity:0;
+    transition:transform .16s ease, opacity .16s ease;
+  }
+  .toast.show{ transform:translateY(0); opacity:1; }
+  .toast-top{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .toast-top b{ font-size:12px; letter-spacing:.2px; }
+  .toast-close{
+    background:rgba(255,255,255,.03); color:var(--text);
+    border:1px solid var(--stroke); border-radius:12px;
+    padding:6px 9px; font-size:12px; cursor:pointer;
+  }
+  .toast-msg{ font-size:12px; color:var(--muted); margin-top:6px; line-height:1.35; }
+  .toast-bar{ height:3px; border-radius:999px; background:rgba(255,255,255,.06); overflow:hidden; margin-top:10px; }
+  .toast-bar > i{ display:block; height:100%; width:100%; background:var(--accent); transform:translateX(-100%); }
+  .toast.show .toast-bar > i{ animation:toastProgress linear forwards; }
+  @keyframes toastProgress { to { transform:translateX(0); } }
+</style>
+</head>
+
+<body data-theme="dark">
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="side">
+    <div class="brand">
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>StudyOS 3.0 — MattarLeister</h1>
+          <div class="sub">Offline • SGCP • Multiusuário</div>
+        </div>
+      </div>
+      <div class="pill"><span class="dot"></span> Pronto</div>
+    </div>
+
+    <div class="groupTitle">Navegação</div>
+    <div class="nav" id="nav">
+      <button class="active" data-page="dashboard">
+        <div class="left"><span class="ico">⌂</span>Dashboard</div>
+        <span class="badge">Hoje</span>
+      </button>
+      <button data-page="heatmap">
+        <div class="left"><span class="ico">▦</span>Heatmap</div>
+        <span class="badge">SGCP</span>
+      </button>
+      <button data-page="caderno">
+        <div class="left"><span class="ico">✎</span>Caderno</div>
+        <span class="badge">2 modos</span>
+      </button>
+      <button data-page="juris">
+        <div class="left"><span class="ico">⚰️</span>Súmulas</div>
+        <span class="badge">Semana</span>
+      </button>
+      <button data-page="blindagem">
+        <div class="left"><span class="ico">🧠</span>Blindagem</div>
+        <span class="badge">Anti-peg</span>
+      </button>
+      <button data-page="simulador">
+        <div class="left"><span class="ico">⎈</span>Simulador</div>
+        <span class="badge">P(corte)</span>
+      </button>
+      <button data-page="settings">
+        <div class="left"><span class="ico">⚙︎</span>Config</div>
+        <span class="badge">Admin</span>
+      </button>
+    </div>
+
+    <div class="sideFooter">
+      <div class="row">
+        <button class="miniBtn" id="themeBtn">Alternar tema</button>
+        <button class="miniBtn" id="toastDemo">Toast</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <span class="badge" id="uiUser">Usuário: U1</span>
+        <span class="badge" id="uiBanca">Banca: FCC</span>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <span class="badge">Ctrl+K / ⌘K</span>
+        <span class="badge">StudyBot 🤖</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <header class="topbar">
+      <div class="left">
+        <div class="search" role="search">
+          <span style="opacity:.7">⌕</span>
+          <input id="search" placeholder="Buscar tópico, disciplina, súmula, replay..." />
+        </div>
+      </div>
+      <div class="kpis">
+        <div class="kpi">
+          <b>Missão do dia</b>
+          <span id="kpiMission"><span class="accent">3 itens</span> • 45 min</span>
+        </div>
+        <div class="kpi">
+          <b>Risco</b>
+          <span id="kpiRisk"><span class="warn">Médio</span> • 2 vencidos</span>
+        </div>
+        <div class="kpi">
+          <b>Compliance</b>
+          <span id="kpiCompliance"><span class="good">100%</span> • ok</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="content">
+
+      <!-- DASHBOARD -->
+      <section class="page" id="page-dashboard">
+        <div class="grid">
+          <div class="card">
+            <h2>Central do Dia</h2>
+            <div class="sub">O StudyOS decide o que fazer agora (risco • banca • custo/benefício). Aqui está um preview — depois você pluga o SGCP real.</div>
+
+            <div class="row" style="margin-top:12px">
+              <button class="btn primary" id="btnMission">Gerar missão</button>
+              <button class="btn" id="btnFocus">Start foco</button>
+              <button class="btn ghost" id="btnBlind">Ver blindagem</button>
+            </div>
+
+            <div class="heat" aria-label="Heatmap (preview)">
+              <div class="cell"><b>Alto impacto • Alto risco</b><div class="mini">Estude agora</div><div class="tag"><span class="bar"></span>Top 3</div></div>
+              <div class="cell"><b>Médio impacto • Alto risco</b><div class="mini">Revisar</div><div class="tag"><span class="bar" style="background:var(--warn)"></span>7/15</div></div>
+              <div class="cell"><b>Baixo impacto • Alto risco</b><div class="mini">Rápido</div><div class="tag"><span class="bar" style="background:var(--muted2)"></span>10min</div></div>
+              <div class="cell"><b>Alto impacto • Médio risco</b><div class="mini">Consolidar</div><div class="tag"><span class="bar" style="background:var(--accent2)"></span>Questões</div></div>
+              <div class="cell"><b>Médio impacto • Médio risco</b><div class="mini">Manter</div><div class="tag"><span class="bar" style="background:var(--good)"></span>Ok</div></div>
+              <div class="cell"><b>Baixo impacto • Médio risco</b><div class="mini">Depois</div><div class="tag"><span class="bar" style="background:var(--muted2)"></span>—</div></div>
+              <div class="cell"><b>Alto impacto • Baixo risco</b><div class="mini">Revisão leve</div><div class="tag"><span class="bar" style="background:var(--good)"></span>30d</div></div>
+              <div class="cell"><b>Médio impacto • Baixo risco</b><div class="mini">Rotina</div><div class="tag"><span class="bar" style="background:var(--good)"></span>—</div></div>
+              <div class="cell"><b>Baixo impacto • Baixo risco</b><div class="mini">Ignorar</div><div class="tag"><span class="bar" style="background:var(--muted2)"></span>—</div></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Top 10 Agora (preview)</h2>
+            <div class="sub">Depois vamos substituir por seu SGCP real + badges 🎥⚰️⏰📒.</div>
+
+            <div class="t10" id="top10">
+              <div class="tItem">
+                <div class="l">
+                  <b>Competência da JT</b>
+                  <div>Score 92 • Trabalho</div>
+                </div>
+                <div class="tBadges">
+                  <span class="bchip" title="Replay pendente">🎥</span>
+                  <span class="bchip" title="Revisão vencida">⏰</span>
+                </div>
+              </div>
+              <div class="tItem">
+                <div class="l">
+                  <b>Terceirização</b>
+                  <div>Score 88 • Trabalho</div>
+                </div>
+                <div class="tBadges">
+                  <span class="bchip" title="Súmula crítica">⚰️</span>
+                </div>
+              </div>
+              <div class="tItem">
+                <div class="l">
+                  <b>Controle de constitucionalidade</b>
+                  <div>Score 84 • Constitucional</div>
+                </div>
+                <div class="tBadges">
+                  <span class="bchip" title="Cards vencidos">📒</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:12px">
+              <button class="btn primary" id="btnRecalc">Recalcular</button>
+              <button class="btn" id="btnFixFCC">Fixar FCC</button>
+              <button class="btn" id="btnFixCEB">Fixar CEBRASPE</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HEATMAP -->
+      <section class="page" id="page-heatmap" style="display:none">
+        <div class="card">
+          <h2>Heatmap SGCP</h2>
+          <div class="sub">Cole aqui seu Heatmap real (3×3) + Ranking + Missão do Dia.</div>
+        </div>
+      </section>
+
+      <!-- CADERNO -->
+      <section class="page" id="page-caderno" style="display:none">
+        <div class="card">
+          <h2>Caderno Inteligente</h2>
+          <div class="sub">Modo Notas ↔ Modo Acertos (corrigidos viram revisão). Em breve plugar seu módulo real.</div>
+        </div>
+      </section>
+
+      <!-- JURIS -->
+      <section class="page" id="page-juris" style="display:none">
+        <div class="card">
+          <h2>Cemitério das Súmulas</h2>
+          <div class="sub">Semana, cards automáticos e booster no SGCP. Em breve plugar seu módulo real.</div>
+        </div>
+      </section>
+
+      <!-- BLINDAGEM -->
+      <section class="page" id="page-blindagem" style="display:none">
+        <div class="card">
+          <h2>Blindagem</h2>
+          <div class="sub">Anti-Pegadinha + Replay 10s. Em breve plugar os módulos completos.</div>
+        </div>
+      </section>
+
+      <!-- SIMULADOR -->
+      <section class="page" id="page-simulador" style="display:none">
+        <div class="card">
+          <h2>Simulador Real</h2>
+          <div class="sub">Nota esperada, P10–P90, probabilidade de corte e metas. Em breve plugar seu motor real.</div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="page" id="page-settings" style="display:none">
+        <div class="card">
+          <h2>Configurações</h2>
+          <div class="sub">Admin: usuários, cargos, editais, import/export. Em breve plugar o painel real.</div>
+        </div>
+      </section>
+
+    </section>
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+  /* ========= Small Global State (stub) ========= */
+  window.activeUserId = "U1";
+  window.activeCourseId = "TRT — Analista";
+  window.activeEditalVersion = "v1";
+  window.activeBanca = "FCC";
+
+  /* ========= Toast Core ========= */
+  (function(){
+    const wrap = document.getElementById("toastWrap");
+    function escapeHtml(s){
+      return String(s)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+    function toast({ title="StudyOS", message="", ms=1600 } = {}){
+      const el = document.createElement("div");
+      el.className = "toast";
+      el.innerHTML = `
+        <div class="toast-top">
+          <b>${escapeHtml(title)}</b>
+          <button class="toast-close">×</button>
+        </div>
+        <div class="toast-msg">${escapeHtml(message)}</div>
+        <div class="toast-bar"><i style="animation-duration:${ms}ms"></i></div>
+      `;
+      el.querySelector(".toast-close").onclick = ()=>remove();
+      wrap.appendChild(el);
+      requestAnimationFrame(()=> el.classList.add("show"));
+      const t = setTimeout(remove, ms + 180);
+      function remove(){
+        clearTimeout(t);
+        el.classList.remove("show");
+        setTimeout(()=> el.remove(), 180);
+      }
+    }
+    window.ToastCore = { toast };
+    // compat
+    window.toast = (t,m,ms)=>toast({title:t,message:m,ms:ms||1600});
+  })();
+
+  /* ========= Router ========= */
+  const nav = document.getElementById('nav');
+  nav.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-page]');
+    if(!btn) return;
+    document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const page = btn.dataset.page;
+    document.querySelectorAll('.page').forEach(p=>p.style.display='none');
+    document.getElementById('page-'+page).style.display='block';
+    ToastCore.toast({title:"Navegação", message:"Abrindo: "+page, ms:1200});
+  });
+
+  /* ========= Theme ========= */
+  document.getElementById('themeBtn').onclick = ()=>{
+    const body = document.body;
+    const next = body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    body.setAttribute('data-theme', next);
+    ToastCore.toast({title:"Tema", message: next==="dark" ? "Modo escuro" : "Modo claro", ms:1200});
+  };
+
+  document.getElementById('toastDemo').onclick = ()=>ToastCore.toast({title:"StudyOS", message:"Micro-interação premium OK.", ms:1600});
+
+  /* ========= Search (stub) ========= */
+  document.getElementById('search').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){
+      ToastCore.toast({title:"Buscar", message:"Pesquisa offline (stub): "+e.target.value, ms:1600});
+    }
+  });
+
+  /* ========= UI Buttons (stub actions) ========= */
+  function updateBadges(){
+    document.getElementById("uiUser").textContent = "Usuário: " + window.activeUserId;
+    document.getElementById("uiBanca").textContent = "Banca: " + window.activeBanca;
+  }
+  updateBadges();
+
+  document.getElementById("btnMission").onclick = ()=>ToastCore.toast({title:"Missão", message:"Gerando missão (stub)…", ms:1400});
+  document.getElementById("btnFocus").onclick = ()=>ToastCore.toast({title:"Foco", message:"Start foco (stub).", ms:1400});
+  document.getElementById("btnBlind").onclick = ()=>{
+    document.querySelector('.nav button[data-page="blindagem"]')?.click();
+    ToastCore.toast({title:"Blindagem", message:"Abrindo módulo…", ms:1400});
+  };
+  document.getElementById("btnRecalc").onclick = ()=>ToastCore.toast({title:"SGCP", message:"Recalcular (stub).", ms:1400});
+  document.getElementById("btnFixFCC").onclick = ()=>{ window.activeBanca="FCC"; updateBadges(); ToastCore.toast({title:"Banca fixada", message:"FCC", ms:1200}); };
+  document.getElementById("btnFixCEB").onclick = ()=>{ window.activeBanca="CEBRASPE"; updateBadges(); ToastCore.toast({title:"Banca fixada", message:"CEBRASPE", ms:1200}); };
+
+</script>
+
+<!-- =========================
+     Command Palette (Ctrl+K / ⌘K)
+========================= -->
+<style>
+  .cp-backdrop{position:fixed; inset:0; z-index:99998; background:rgba(0,0,0,.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display:none;}
+  .cp{
+    position:fixed; left:50%; top:12%; transform:translateX(-50%);
+    width:min(720px, 92vw); z-index:99999;
+    border:1px solid var(--stroke); border-radius:20px;
+    background: var(--card2); box-shadow: var(--shadow);
+    overflow:hidden; display:none;
+  }
+  .cp-head{display:flex; align-items:center; gap:10px; padding:14px; border-bottom:1px solid var(--stroke);}
+  .cp-icon{width:34px;height:34px;border-radius:14px;display:grid;place-items:center;border:1px solid var(--stroke);background:rgba(255,255,255,.03);color:var(--muted);}
+  .cp-input{width:100%; border:none; outline:none; background:transparent; color:var(--text); font-size:14px;}
+  .cp-hint{font-size:11px;color:var(--muted2);border:1px solid var(--stroke);background:rgba(255,255,255,.03);padding:6px 8px;border-radius:12px;white-space:nowrap;}
+  .cp-list{max-height:min(420px, 58vh); overflow:auto; padding:10px;}
+  .cp-item{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px; border-radius:16px; border:1px solid transparent; cursor:pointer; transition:background .10s ease, border-color .10s ease, transform .10s ease;}
+  .cp-item:hover{background:rgba(255,255,255,.04); border-color:var(--stroke); transform: translateY(-1px);}
+  .cp-item.active{background: linear-gradient(180deg, rgba(110,231,255,.12), rgba(167,139,250,.07)); border-color: rgba(110,231,255,.20);}
+  .cp-left{display:flex; align-items:center; gap:10px; min-width:0}
+  .cp-ico2{width:28px;height:28px;border-radius:12px;display:grid;place-items:center;border:1px solid var(--stroke);background:rgba(255,255,255,.03);color:var(--muted);flex:0 0 auto;}
+  .cp-txt{min-width:0}
+  .cp-title{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cp-sub{font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cp-right{display:flex; align-items:center; gap:8px; flex:0 0 auto}
+  .cp-tag{font-size:11px;color:var(--muted);border:1px solid var(--stroke);background:rgba(255,255,255,.03);padding:5px 8px;border-radius:999px;}
+</style>
+
+<div class="cp-backdrop" id="cpBackdrop"></div>
+<div class="cp" id="cp">
+  <div class="cp-head">
+    <div class="cp-icon">⌘</div>
+    <input class="cp-input" id="cpInput" placeholder="Digite… (ex: ‘caderno’, ‘fixar banca cebraspe’, ‘tema’)"/>
+    <div class="cp-hint">Enter</div>
+    <div class="cp-hint">Esc</div>
+  </div>
+  <div class="cp-list" id="cpList"></div>
+</div>
+
+<script>
+(function(){
+  const $ = (id)=>document.getElementById(id);
+  const backdrop = $("cpBackdrop"), modal = $("cp"), input = $("cpInput"), list = $("cpList");
+
+  const normalize = (s)=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+  const tok = (s)=>normalize(s).split(/\s+/).filter(Boolean);
+
+  function isOpen(){ return modal.style.display === "block"; }
+  function open(){ backdrop.style.display="block"; modal.style.display="block"; input.value=""; build(); requestAnimationFrame(()=>input.focus()); }
+  function close(){ backdrop.style.display="none"; modal.style.display="none"; }
+
+  function route(page){
+    document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+    document.querySelector(`.nav button[data-page="${page}"]`)?.classList.add("active");
+    document.querySelectorAll(".page").forEach(p=>p.style.display="none");
+    document.getElementById("page-"+page).style.display="block";
+    ToastCore.toast({title:"Navegação", message:"Abrindo: "+page, ms:1200});
+  }
+  function toggleTheme(){
+    const body = document.body;
+    body.setAttribute("data-theme", (body.getAttribute("data-theme")==="dark") ? "light":"dark");
+    ToastCore.toast({title:"Tema", message:"Alternado.", ms:1200});
+  }
+  function fixBanca(b){
+    window.activeBanca=b;
+    document.getElementById("uiBanca").textContent = "Banca: " + b;
+    ToastCore.toast({title:"Banca fixada", message:b, ms:1200});
+  }
+
+  function parseSmartActions(qn){
+    if (qn.startsWith("fixar banca") || qn.startsWith("banca")){
+      if (qn.includes("cebraspe")) return ()=>fixBanca("CEBRASPE");
+      if (qn.includes("fcc")) return ()=>fixBanca("FCC");
+      if (qn.includes("fgv")) return ()=>fixBanca("FGV");
+      if (qn.includes("ufpr")) return ()=>fixBanca("UFPR");
+    }
+    if (qn === "tema" || qn.includes("alternar tema")) return ()=>toggleTheme();
+    return null;
+  }
+
+  function baseCommands(){
+    return [
+      { icon:"⌂", title:"Dashboard", sub:"Central do Dia, Top10", tag:"Página", run:()=>route("dashboard") },
+      { icon:"▦", title:"Heatmap", sub:"SGCP", tag:"Página", run:()=>route("heatmap") },
+      { icon:"✎", title:"Caderno", sub:"Notas ↔ Acertos", tag:"Página", run:()=>route("caderno") },
+      { icon:"⚰️", title:"Súmulas", sub:"Cemitério", tag:"Página", run:()=>route("juris") },
+      { icon:"🧠", title:"Blindagem", sub:"Anti-peg + Replay", tag:"Página", run:()=>route("blindagem") },
+      { icon:"⎈", title:"Simulador", sub:"Aprovação", tag:"Página", run:()=>route("simulador") },
+      { icon:"⚙︎", title:"Config", sub:"Admin", tag:"Página", run:()=>route("settings") },
+
+      { icon:"◐", title:"Alternar tema", sub:"Dark ↔ Light", tag:"Ação", run:()=>toggleTheme() },
+      { icon:"🏛️", title:"Fixar banca: FCC", sub:"Define banca global", tag:"Banca", run:()=>fixBanca("FCC") },
+      { icon:"🏛️", title:"Fixar banca: FGV", sub:"Define banca global", tag:"Banca", run:()=>fixBanca("FGV") },
+      { icon:"🏛️", title:"Fixar banca: CEBRASPE", sub:"Define banca global", tag:"Banca", run:()=>fixBanca("CEBRASPE") },
+      { icon:"🏛️", title:"Fixar banca: UFPR", sub:"Define banca global", tag:"Banca", run:()=>fixBanca("UFPR") },
+    ];
+  }
+
+  const CATALOG = baseCommands();
+  const score = (cmd, qTokens, query)=>{
+    if (!query) return 1;
+    const t = normalize(cmd.title), s = normalize(cmd.sub), tag = normalize(cmd.tag);
+    let sc=0;
+    for (const q of qTokens){ if (t.includes(q)) sc+=6; if (s.includes(q)) sc+=2; if (tag.includes(q)) sc+=1; }
+    if (t.startsWith(query)) sc += 6;
+    if (query.includes("banca") && cmd.tag==="Banca") sc += 6;
+    if ((query.includes("tema") || query.includes("dark") || query.includes("light")) && cmd.title.includes("tema")) sc += 6;
+    return sc;
+  };
+
+  let activeIndex=0, currentResults=[];
+
+  function build(){
+    const q = normalize(input.value);
+    const qTokens = tok(q);
+    const smart = parseSmartActions(q);
+
+    const results = [];
+    if (smart){
+      results.push({ icon:"⚡", title:"Executar comando direto", sub:input.value, tag:"Comando", run:()=>smart() });
+    }
+
+    const ranked = CATALOG
+      .map(cmd=>({cmd, sc:score(cmd,qTokens,q)}))
+      .filter(x=> q ? x.sc>0 : true)
+      .sort((a,b)=>b.sc-a.sc)
+      .slice(0, 12)
+      .map(x=>x.cmd);
+
+    results.push(...ranked);
+    currentResults = results;
+    activeIndex = 0;
+    render();
+  }
+
+  function escapeHtml(s){
+    return String(s||"")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+
+  function render(){
+    list.innerHTML="";
+    if (!currentResults.length){
+      list.innerHTML = `<div style="padding:12px;color:var(--muted)">Nada encontrado.</div>`;
+      return;
+    }
+    currentResults.forEach((cmd,i)=>{
+      const el = document.createElement("div");
+      el.className = "cp-item"+(i===activeIndex?" active":"");
+      el.innerHTML = `
+        <div class="cp-left">
+          <div class="cp-ico2">${cmd.icon||"•"}</div>
+          <div class="cp-txt">
+            <div class="cp-title">${escapeHtml(cmd.title)}</div>
+            <div class="cp-sub">${escapeHtml(cmd.sub||"")}</div>
+          </div>
+        </div>
+        <div class="cp-right"><span class="cp-tag">${escapeHtml(cmd.tag||"")}</span></div>
+      `;
+      el.onclick = ()=>{ cmd.run?.(); close(); };
+      list.appendChild(el);
+    });
+  }
+
+  document.addEventListener("keydown",(e)=>{
+    const k=e.key.toLowerCase();
+    if ((e.ctrlKey || e.metaKey) && k==="k"){ e.preventDefault(); isOpen()?close():open(); return; }
+    if (!isOpen()) return;
+    if (k==="escape"){ e.preventDefault(); close(); return; }
+    if (k==="arrowdown"){ e.preventDefault(); activeIndex=Math.min(currentResults.length-1,activeIndex+1); render(); list.children[activeIndex]?.scrollIntoView?.({block:"nearest"}); return; }
+    if (k==="arrowup"){ e.preventDefault(); activeIndex=Math.max(0,activeIndex-1); render(); list.children[activeIndex]?.scrollIntoView?.({block:"nearest"}); return; }
+    if (k==="enter"){ e.preventDefault(); currentResults[activeIndex]?.run?.(); close(); return; }
+  });
+
+  backdrop.onclick = close;
+  input.oninput = build;
+})();
+</script>
+
+<!-- =========================
+     Auditor Modal (3 botões)
+========================= -->
+<style>
+  .am-backdrop{position:fixed; inset:0; z-index:99997; background:rgba(0,0,0,.60); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display:none;}
+  .am{
+    position:fixed; left:50%; top:16%; transform:translateX(-50%);
+    width:min(520px, 92vw); z-index:99998;
+    border:1px solid var(--stroke); border-radius:22px;
+    background: var(--card2); box-shadow: var(--shadow);
+    overflow:hidden; display:none;
+  }
+  .am-head{
+    padding:14px; border-bottom:1px solid var(--stroke);
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background: linear-gradient(180deg, rgba(255,255,255,.03), transparent 70%);
+  }
+  .am-title{display:flex; align-items:center; gap:10px; min-width:0;}
+  .am-badge{
+    width:34px;height:34px;border-radius:14px;display:grid;place-items:center;
+    border:1px solid rgba(255,255,255,.12);
+    background: radial-gradient(circle at 30% 30%, rgba(110,231,255,.80), rgba(167,139,250,.55));
+  }
+  .am-title b{font-size:13px}
+  .am-title span{display:block;font-size:11px;color:var(--muted2);margin-top:2px}
+  .am-close{border:1px solid var(--stroke); background:rgba(255,255,255,.03); color:var(--text); padding:8px 10px; border-radius:14px; cursor:pointer; font-size:12px;}
+  .am-body{padding:14px}
+  .am-msg{border:1px solid var(--stroke); background:rgba(255,255,255,.03); border-radius:18px; padding:12px; color:var(--muted); font-size:12px; line-height:1.4;}
+  .am-actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;}
+  .am-btn{
+    flex:1 1 140px;
+    border:1px solid var(--stroke); background:rgba(255,255,255,.03); color:var(--text);
+    padding:12px; border-radius:18px; cursor:pointer; font-size:12px;
+    transition: transform .12s ease, filter .12s ease; text-align:left;
+  }
+  .am-btn:hover{filter:brightness(1.08); transform:translateY(-1px)}
+  .am-btn b{display:block;font-size:12px}
+  .am-btn span{display:block;margin-top:4px;color:var(--muted);font-size:12px}
+  .am-btn.good{border-color: rgba(52,211,153,.22); background: linear-gradient(180deg, rgba(52,211,153,.10), rgba(255,255,255,.02));}
+  .am-btn.warn{border-color: rgba(251,191,36,.22); background: linear-gradient(180deg, rgba(251,191,36,.10), rgba(255,255,255,.02));}
+  .am-btn.bad{border-color: rgba(251,113,133,.22); background: linear-gradient(180deg, rgba(251,113,133,.10), rgba(255,255,255,.02));}
+  .am-foot{padding:0 14px 14px 14px; color:var(--muted2); font-size:11px; display:flex; align-items:center; gap:8px;}
+  .am-dot{width:8px;height:8px;border-radius:999px;background:var(--bad);box-shadow:0 0 0 4px rgba(251,113,133,.12)}
+</style>
+
+<div class="am-backdrop" id="amBackdrop"></div>
+<div class="am" id="amModal" role="dialog" aria-modal="true">
+  <div class="am-head">
+    <div class="am-title">
+      <div class="am-badge">🧨</div>
+      <div style="min-width:0">
+        <b>AUDITOR — CHECK-IN</b>
+        <span>Sem desculpas. Só execução.</span>
+      </div>
+    </div>
+    <button class="am-close" id="amClose">Fechar</button>
+  </div>
+
+  <div class="am-body">
+    <div class="am-msg" id="amText">—</div>
+    <div class="am-actions">
+      <button class="am-btn good" id="amOk"><b>✅ CUMPRI</b><span>Execução completa, sem distração.</span></button>
+      <button class="am-btn warn" id="amHalf"><b>🟡 PARCIAL</b><span>Andei, mas não finalizei (cobra leve).</span></button>
+      <button class="am-btn bad" id="amFail"><b>❌ FALHEI</b><span>Não executei. Amanhã é HARD MODE.</span></button>
+    </div>
+  </div>
+
+  <div class="am-foot"><span class="am-dot"></span><span>Regra: parcial não é vitória. É dívida.</span></div>
+</div>
+
+<script>
+(function(){
+  const $ = (id)=>document.getElementById(id);
+  const bd = $("amBackdrop"), md = $("amModal"), txt = $("amText");
+  const closeBtn = $("amClose"), okBtn = $("amOk"), halfBtn = $("amHalf"), failBtn = $("amFail");
+  let resolver = null;
+
+  function openAuditorModal(message){
+    txt.textContent = message || "Você executou a missão do StudyOS?";
+    bd.style.display = "block";
+    md.style.display = "block";
+    return new Promise((resolve)=>{ resolver = resolve; requestAnimationFrame(()=> okBtn.focus()); });
+  }
+
+  function close(value){
+    bd.style.display = "none"; md.style.display = "none";
+    if (resolver){ const r = resolver; resolver = null; r(value); }
+  }
+
+  closeBtn.onclick = ()=>close("CLOSE");
+  bd.onclick = ()=>close("CLOSE");
+  okBtn.onclick = ()=>close("OK");
+  halfBtn.onclick = ()=>close("HALF");
+  failBtn.onclick = ()=>close("FAIL");
+
+  document.addEventListener("keydown",(e)=>{
+    if (md.style.display !== "block") return;
+    if (e.key === "Escape"){ e.preventDefault(); close("CLOSE"); }
+    if (e.key === "Enter"){ e.preventDefault(); close("OK"); }
+  });
+
+  window.openAuditorModal = openAuditorModal;
+})();
+</script>
+
+<!-- =========================
+     Auditor IMPLACÁVEL (09/15/21)
+========================= -->
+<script>
+(function(){
+  const loadJSON = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } };
+  const saveJSON = (k,v)=>localStorage.setItem(k, JSON.stringify(v));
+  const isoToday = ()=>new Date().toISOString().slice(0,10);
+
+  const KEY = "StudyOS::AUDITOR::DATA";
+
+  function nowMinutes(){ const d=new Date(); return d.getHours()*60 + d.getMinutes(); }
+  function nowHM(){ return new Date().toTimeString().slice(0,5); }
+
+  function getData(){
+    return loadJSON(KEY, { history:{}, lastCheck:null, hardMode:{} });
+  }
+  function saveData(d){ saveJSON(KEY, d); }
+
+  function ensureDate(dateISO){
+    const d = getData();
+    if (!d.history[dateISO]) d.history[dateISO] = { planned:3, done:0, half:0 };
+    saveData(d);
+  }
+  function ensureToday(){ ensureDate(isoToday()); }
+
+  function tomorrowISO(){
+    const d = new Date();
+    d.setDate(d.getDate()+1);
+    return d.toISOString().slice(0,10);
+  }
+
+  function markDone(){
+    ensureToday();
+    const d = getData();
+    d.history[isoToday()].done++;
+    saveData(d);
+    updateKPI();
+  }
+  function markHalf(){
+    ensureToday();
+    const d = getData();
+    d.history[isoToday()].half = (d.history[isoToday()].half || 0) + 1;
+    saveData(d);
+    updateKPI();
+  }
+
+  function applyPenalty(){
+    ensureToday();
+    const d = getData();
+    const tmr = tomorrowISO();
+    ensureDate(tmr);
+
+    d.history[tmr].planned = Math.min(6, (d.history[tmr].planned || 3) + 1);
+    d.hardMode = d.hardMode || {};
+    d.hardMode[tmr] = { enforceShield:true, enforceReplay:true, reason:"AuditorFail" };
+
+    saveData(d);
+    updateKPI();
+  }
+
+  function applyPenaltyLight(){
+    ensureToday();
+    const d = getData();
+    const tmr = tomorrowISO();
+    ensureDate(tmr);
+
+    d.history[tmr].planned = Math.min(5, (d.history[tmr].planned || 3) + 1);
+    d.hardMode = d.hardMode || {};
+    d.hardMode[tmr] = Object.assign(d.hardMode[tmr] || {}, { enforceShield:true, reason:"AuditorPartial" });
+
+    saveData(d);
+    updateKPI();
+  }
+
+  function isHardModeToday(){
+    const d = getData();
+    const today = isoToday();
+    return !!(d.hardMode && d.hardMode[today] && (d.hardMode[today].enforceShield || d.hardMode[today].enforceReplay));
+  }
+
+  function complianceScore(){
+    const d = getData();
+    const days = Object.values(d.history);
+    let planned=0, done=0;
+    for (const x of days){
+      planned += (x.planned || 0);
+      done += (x.done || 0) + 0.5*(x.half || 0);
+    }
+    if (!planned) return 100;
+    return Math.round((done/planned)*100);
+  }
+
+  function updateKPI(){
+    const score = complianceScore();
+    const hard = isHardModeToday();
+    const el = document.getElementById("kpiCompliance");
+    if (el){
+      el.innerHTML =
+        `<span class="${score>=75?'good':score>=50?'warn':'bad'}">${score}%</span> • ${hard ? '<span class="bad">HARD MODE</span>' : 'ok'}`;
+    }
+    window.__AuditorHardMode = hard;
+  }
+
+  async function checkTime(){
+    ensureToday();
+    const d = getData();
+    const today = isoToday();
+
+    // check-ins
+    const times = [540, 900, 1260]; // 09:00, 15:00, 21:00
+    const now = nowMinutes();
+    const slot = times.find(t => Math.abs(now - t) < 3);
+    if (!slot) return;
+
+    if (d.lastCheck === today+"_"+slot) return;
+    d.lastCheck = today+"_"+slot;
+    saveData(d);
+
+    ToastCore.toast({title:"AUDITOR — EXECUÇÃO", message:`${nowHM()} • Status agora. Você cumpriu a missão?`, ms:4200});
+
+    setTimeout(async ()=>{
+      let res = await window.openAuditorModal?.("Status agora: você cumpriu a missão do StudyOS?");
+      // IMPLACÁVEL: fechar = falha
+      if (res === "CLOSE") res = "FAIL";
+
+      if (res === "OK"){
+        markDone();
+        ToastCore.toast({title:"REGISTRADO", message:"Bom. Próxima ordem: continue. Sem euforia.", ms:1700});
+      } else if (res === "HALF"){
+        markHalf();
+        applyPenaltyLight();
+        ToastCore.toast({title:"PARCIAL", message:"Dívida registrada. Amanhã você paga.", ms:2200});
+      } else if (res === "FAIL"){
+        applyPenalty();
+        ToastCore.toast({title:"FALHA", message:"Amanhã é HARD MODE. Sem conversa.", ms:2400});
+      }
+    }, 520);
+  }
+
+  updateKPI();
+  setInterval(checkTime, 60000);
+})();
+</script>
+
+<!-- =========================
+     StudyBot (Coach + Examinador)
+========================= -->
+<style>
+  .sb-fab{
+    position:fixed; right:16px; bottom:84px; z-index:99990;
+    width:54px; height:54px; border-radius:18px;
+    border:1px solid var(--stroke);
+    background: linear-gradient(180deg, rgba(110,231,255,.14), rgba(167,139,250,.08));
+    box-shadow: var(--shadow);
+    cursor:pointer;
+    display:grid; place-items:center;
+    transition: transform .12s ease, filter .12s ease;
+  }
+  .sb-fab:hover{filter:brightness(1.08); transform:translateY(-2px)}
+  .sb-panel{
+    position:fixed; right:16px; bottom:148px; z-index:99991;
+    width:min(420px, 92vw);
+    border:1px solid var(--stroke);
+    border-radius:22px;
+    background: var(--card2);
+    box-shadow: var(--shadow);
+    overflow:hidden;
+    display:none;
+  }
+  .sb-head{
+    padding:12px; border-bottom:1px solid var(--stroke);
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background: linear-gradient(180deg, rgba(255,255,255,.03), transparent 70%);
+  }
+  .sb-title{display:flex; align-items:center; gap:10px; min-width:0;}
+  .sb-avatar{
+    width:34px; height:34px; border-radius:14px;
+    background: radial-gradient(circle at 30% 30%, rgba(110,231,255,.80), rgba(167,139,250,.55));
+    border:1px solid rgba(255,255,255,.12);
+  }
+  .sb-title b{font-size:13px}
+  .sb-title span{display:block; font-size:11px; color:var(--muted2); margin-top:2px}
+  .sb-btn{
+    border:1px solid var(--stroke);
+    background:rgba(255,255,255,.03);
+    color:var(--text);
+    padding:8px 10px;
+    border-radius:14px;
+    cursor:pointer;
+    font-size:12px;
+  }
+  .sb-body{max-height:min(420px, 55vh); overflow:auto; padding:12px}
+  .sb-msg{
+    border:1px solid var(--stroke);
+    background:rgba(255,255,255,.03);
+    border-radius:18px;
+    padding:10px 12px;
+    margin-bottom:10px;
+  }
+  .sb-msg.you{background:rgba(110,231,255,.07); border-color:rgba(110,231,255,.18)}
+  .sb-msg b{font-size:12px}
+  .sb-msg div{font-size:12px; color:var(--muted); margin-top:4px; line-height:1.35}
+  .sb-actions{display:flex; gap:8px; flex-wrap:wrap; padding:10px 12px; border-top:1px solid var(--stroke)}
+  .sb-chip{
+    border:1px solid var(--stroke);
+    background:rgba(255,255,255,.03);
+    color:var(--text);
+    padding:8px 10px;
+    border-radius:999px;
+    cursor:pointer;
+    font-size:12px;
+    transition:filter .12s ease, transform .12s ease;
+  }
+  .sb-chip:hover{filter:brightness(1.08); transform:translateY(-1px)}
+  .sb-mini{display:flex; gap:8px; align-items:center; padding:0 12px 12px 12px; color:var(--muted2); font-size:11px;}
+  .sb-dot{width:8px;height:8px;border-radius:999px;background:var(--good); box-shadow:0 0 0 4px rgba(52,211,153,.12)}
+  .sb-select{
+    border:1px solid var(--stroke);
+    background:rgba(255,255,255,.03);
+    color:var(--text);
+    padding:8px 10px;
+    border-radius:14px;
+    cursor:pointer;
+    font-size:12px;
+  }
+</style>
+
+<button class="sb-fab" id="sbFab" title="StudyBot">🤖</button>
+
+<div class="sb-panel" id="sbPanel">
+  <div class="sb-head">
+    <div class="sb-title">
+      <div class="sb-avatar" aria-hidden="true"></div>
+      <div style="min-width:0">
+        <b>StudyBot</b>
+        <span id="sbSub">Coach offline • decisões rápidas</span>
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center">
+      <select class="sb-select" id="sbMode">
+        <option value="COACH">Coach</option>
+        <option value="EXAM">Examinador</option>
+      </select>
+      <button class="sb-btn" id="sbClose">Fechar</button>
+    </div>
+  </div>
+
+  <div class="sb-mini"><span class="sb-dot"></span><span id="sbMini">—</span></div>
+  <div class="sb-body" id="sbBody"></div>
+
+  <div class="sb-actions">
+    <button class="sb-chip" data-act="mission">🎯 Missão</button>
+    <button class="sb-chip" data-act="focus">⏱️ Foco</button>
+    <button class="sb-chip" data-act="shield">🧠 Blindagem</button>
+    <button class="sb-chip" data-act="juris">⚰️ Súmulas</button>
+    <button class="sb-chip" data-act="top10">🔥 Top10</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id)=>document.getElementById(id);
+  const fab=$("sbFab"), panel=$("sbPanel"), body=$("sbBody"), closeBtn=$("sbClose"), modeSel=$("sbMode"), mini=$("sbMini"), sub=$("sbSub");
+
+  const isoToday = ()=>new Date().toISOString().slice(0,10);
+  const nowHM = ()=>new Date().toTimeString().slice(0,5);
+
+  function ctx(){
+    return { userId: window.activeUserId||"U1", courseId: window.activeCourseId||"—", editalVersion: window.activeEditalVersion||"—", banca: window.activeBanca||"FCC" };
+  }
+  function route(page){
+    document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+    document.querySelector(`.nav button[data-page="${page}"]`)?.classList.add("active");
+    document.querySelectorAll(".page").forEach(p=>p.style.display="none");
+    document.getElementById("page-"+page)?.style.display="block";
+  }
+  function push(role, title, text){
+    const el=document.createElement("div");
+    el.className="sb-msg "+(role==="you"?"you":"bot");
+    el.innerHTML = `<b>${escapeHtml(title)}</b><div>${escapeHtml(text)}</div>`;
+    body.appendChild(el);
+    body.scrollTop = body.scrollHeight;
+  }
+  function escapeHtml(s){
+    return String(s||"")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+
+  const EXAM = {
+    FCC:["FCC gosta de exceção: viu 'exceto/salvo'? pare e liste exceções reais.","FCC cobra conceito: defina antes de julgar alternativa.","FCC ama competência/rito: identifique o órgão certo primeiro."],
+    FGV:["FGV mistura caso e teoria: qual detalhe muda o resultado?","FGV adora inversão sutil: teste a frase ao contrário.","FGV cobra fundamento: por que está certo?"],
+    CEBRASPE:["CEBRASPE pune absolutos: desconfie de 'sempre/nunca'.","CEBRASPE quer o ponto que torna falso.","CEBRASPE ama inversão: sujeito/objeto trocado derruba."],
+    UFPR:["UFPR adora prazo e procedimento: grife termo inicial/final.","UFPR cobra literalidade + aplicação.","UFPR gosta de conectivo: leia duas vezes."]
+  };
+
+  function greet(){
+    const c=ctx();
+    mini.textContent = `${c.userId} • ${c.courseId} • ${c.editalVersion} • ${c.banca} • ${nowHM()}`;
+    sub.textContent = modeSel.value==="EXAM" ? "Persona de examinador (offline)" : "Coach offline • decisões rápidas";
+
+    if (modeSel.value==="EXAM"){
+      const arr = EXAM[c.banca] || EXAM.FCC;
+      const tip = arr[Math.floor(Math.random()*arr.length)];
+      push("bot", `Examinador ${c.banca}`, tip);
+      push("bot", "Ordem", "Em 10s: diga a regra central do seu tópico #1 hoje.");
+    } else {
+      push("bot", "Plano instantâneo", `HARD MODE hoje? ${window.__AuditorHardMode ? "SIM" : "NÃO"}. Sem negociação: missão → foco → blindagem.`);
+    }
+  }
+
+  function open(){ panel.style.display="block"; greet(); }
+  function close(){ panel.style.display="none"; }
+  function isShown(){ return panel.style.display==="block"; }
+
+  fab.onclick = ()=> isShown()?close():open();
+  closeBtn.onclick = close;
+
+  panel.addEventListener("click",(e)=>{
+    const b = e.target.closest("button[data-act]");
+    if(!b) return;
+    const a=b.dataset.act;
+
+    if(a==="mission"){
+      push("you","Pedido","Gerar missão do dia");
+      ToastCore.toast({title:"Missão", message:"Gerando missão (stub)…", ms:1400});
+      route("dashboard");
+      push("bot","Ordem","Comece pelo item #1. Depois 2 min de blindagem.");
+    }
+    if(a==="focus"){
+      push("you","Pedido","Começar foco");
+      ToastCore.toast({title:"Foco", message:"Timer (stub). 25 min sem trocar.", ms:1400});
+      push("bot","Ordem","25 minutos. Sem troca. Sem conversa.");
+    }
+    if(a==="shield"){
+      push("you","Pedido","Blindagem agora");
+      route("blindagem");
+      ToastCore.toast({title:"Blindagem", message:"2 min. Depois volta pro foco.", ms:1400});
+      push("bot","Blindagem","Anti-pegadinha + 1 Replay (10s). Depois foco.");
+    }
+    if(a==="juris"){
+      push("you","Pedido","Súmula crítica");
+      route("juris");
+      ToastCore.toast({title:"Súmulas", message:"Pegue 1 e registre.", ms:1400});
+      push("bot","Juris","1 súmula do cemitério: escreva a pegadinha em 1 frase.");
+    }
+    if(a==="top10"){
+      push("you","Pedido","Mostrar Top10");
+      route("dashboard");
+      push("bot","Top10 (preview)","Por enquanto é mock. Quando plugar o SGCP, isso vira ranking real.");
+    }
+  });
+
+  modeSel.onchange = ()=>{ push("you","Modo", modeSel.value==="EXAM"?"Examinador":"Coach"); greet(); };
+})();
+</script>
+
+</body>
+</html>
