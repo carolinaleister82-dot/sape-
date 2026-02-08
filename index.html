@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Estudo OS (Offline)</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    body{margin:0;background:#0b0f17;color:#e8eefc}
+    header{padding:16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;gap:12px;align-items:center}
+    header h1{font-size:16px;margin:0}
+    .wrap{max-width:1100px;margin:0 auto;padding:16px;display:grid;gap:14px}
+    .grid{display:grid;gap:14px;grid-template-columns:1.2fr .8fr}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+    .card{background:#0f1626;border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:14px}
+    .card h2{font-size:14px;margin:0 0 10px 0;opacity:.9}
+    .muted{opacity:.75;font-size:13px}
+    button,input,select,textarea{
+      background:#121a2a;color:#e8eefc;border:1px solid rgba(255,255,255,.12);
+      border-radius:10px;padding:10px 12px
+    }
+    button{cursor:pointer}
+    button.primary{background:#2a5cff;border-color:#2a5cff}
+    button.ghost{background:transparent}
+    .row{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+    @media(max-width:700px){.row{grid-template-columns:1fr}}
+    .list{display:grid;gap:10px}
+    .item{padding:12px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:#0c1220;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .item strong{display:block;font-size:14px;margin-bottom:4px}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.18);opacity:.85;font-size:12px}
+    .kpis{display:grid;gap:10px;grid-template-columns:repeat(4,1fr)}
+    @media(max-width:900px){.kpis{grid-template-columns:1fr 1fr}}
+    .kpi{padding:12px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:#0c1220}
+    .kpi .v{font-size:20px;margin-top:6px}
+    .sep{height:1px;background:rgba(255,255,255,.10);margin:10px 0}
+    code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:8px}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Estudo OS (Offline)</h1>
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+    <span id="who" class="muted"></span>
+    <button class="ghost" id="switchBtn">Trocar usuário</button>
+    <button class="ghost" id="resetBtn">Reset</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="card" id="nav"></nav>
+  <div id="view"></div>
+</div>
+
+<script>
+/** ===== Offline multi-usuário (7 amigos) =====
+ * Cada amigo escolhe um "perfil" local (não sincroniza entre aparelhos).
+ * Para sync depois: trocar storage por Firebase.
+ */
+
+const USERS = ["Carol","Renan","Amigo 3","Amigo 4","Amigo 5","Amigo 6","Amigo 7"];
+
+const CARGOS = [
+  { id:"TRT_AJ", name:"TRT - Analista Judiciário" },
+  { id:"AFRFB", name:"Receita Federal - Auditor Fiscal" },
+  { id:"INSS_ANALISTA", name:"INSS - Analista" },
+  { id:"INSS_TECNICO", name:"INSS - Técnico" },
+];
+
+const CURRICULUM = {
+  TRT_AJ: {
+    subjects: [
+      { subject:"Direito Constitucional", topics:[
+        { id:"DC01", title:"Conceito e classificações da Constituição", weight:3 },
+        { id:"DC02", title:"Supremacia + aplicabilidade/eficácia", weight:5, prereq:["DC01"] },
+        { id:"DC03", title:"Princípios fundamentais (art. 1º–4º)", weight:5, prereq:["DC01"] },
+        { id:"DC04", title:"Direitos fundamentais (teoria geral)", weight:5, prereq:["DC02"] },
+        { id:"DC05", title:"Remédios constitucionais", weight:4, prereq:["DC04"] },
+        { id:"DC06", title:"Organização do Estado + competências", weight:4, prereq:["DC03"] },
+        { id:"DC07", title:"Administração Pública (art. 37–41)", weight:5, prereq:["DC03"] },
+        { id:"DC08", title:"Poder Judiciário (estrutura e competências)", weight:5, prereq:["DC06"] },
+        { id:"DC09", title:"Controle de constitucionalidade", weight:5, prereq:["DC04"] },
+      ]},
+      { subject:"Processo do Trabalho", topics:[
+        { id:"PT01", title:"Princípios + aplicação subsidiária do CPC", weight:4 },
+        { id:"PT02", title:"Competência da JT", weight:5, prereq:["PT01","DC08"] },
+        { id:"PT03", title:"Prazos, atos, nulidades", weight:4, prereq:["PT01"] },
+        { id:"PT04", title:"Petição inicial e ritos", weight:5, prereq:["PT03"] },
+        { id:"PT05", title:"Audiência e provas", weight:5, prereq:["PT04"] },
+        { id:"PT06", title:"Recursos", weight:5, prereq:["PT05"] },
+        { id:"PT07", title:"Execução", weight:5, prereq:["PT06"] },
+      ]},
+      { subject:"Direito do Trabalho", topics:[
+        { id:"DT01", title:"Fontes e princípios", weight:4 },
+        { id:"DT02", title:"Relação de emprego x trabalho", weight:5, prereq:["DT01"] },
+        { id:"DT03", title:"Contrato: alteração, suspensão/interrupção", weight:5, prereq:["DT02"] },
+        { id:"DT04", title:"Jornada e intervalos", weight:5, prereq:["DT02"] },
+        { id:"DT05", title:"Salário/remuneração", weight:5, prereq:["DT02"] },
+        { id:"DT06", title:"Rescisão e verbas", weight:5, prereq:["DT03"] },
+      ]},
+      { subject:"Português", topics:[
+        { id:"LP01", title:"Interpretação de texto", weight:5 },
+        { id:"LP02", title:"Coesão e coerência", weight:5, prereq:["LP01"] },
+        { id:"LP03", title:"Pontuação", weight:5, prereq:["LP01"] },
+        { id:"LP04", title:"Crase + regência", weight:4, prereq:["LP01"] },
+        { id:"LP05", title:"Concordância + pronomes", weight:4, prereq:["LP01"] },
+      ]},
+    ]
+  },
+  AFRFB: {
+    subjects: [
+      { subject:"Direito Tributário", topics:[
+        { id:"DTB01", title:"Sistema tributário + espécies", weight:5 },
+        { id:"DTB02", title:"Competência tributária", weight:5, prereq:["DTB01"] },
+        { id:"DTB03", title:"Obrigação tributária", weight:5, prereq:["DTB02"] },
+        { id:"DTB04", title:"Crédito tributário + lançamento", weight:5, prereq:["DTB03"] },
+        { id:"DTB05", title:"Suspensão/extinção/exclusão", weight:5, prereq:["DTB04"] },
+      ]},
+      { subject:"Contabilidade Geral", topics:[
+        { id:"CG01", title:"Patrimônio, contas, partidas dobradas", weight:5 },
+        { id:"CG02", title:"Demonstrações contábeis (BP, DRE, DFC)", weight:5, prereq:["CG01"] },
+        { id:"CG03", title:"Ativo/Passivo/PL; critérios", weight:5, prereq:["CG02"] },
+        { id:"CG04", title:"Estoques, imobilizado, depreciação", weight:4, prereq:["CG03"] },
+      ]},
+      { subject:"Português", topics:[
+        { id:"LP01", title:"Interpretação de texto", weight:5 },
+        { id:"LP02", title:"Reescrita/equivalência", weight:5, prereq:["LP01"] },
+        { id:"LP03", title:"Pontuação", weight:5, prereq:["LP01"] },
+      ]},
+      { subject:"Raciocínio Lógico", topics:[
+        { id:"RL01", title:"Proposições e negações", weight:5 },
+        { id:"RL02", title:"Equivalências e argumentação", weight:5, prereq:["RL01"] },
+        { id:"RL03", title:"Contagem e probabilidade (base)", weight:4, prereq:["RL01"] },
+      ]},
+    ]
+  },
+  INSS_ANALISTA: {
+    subjects: [
+      { subject:"Previdenciário", topics:[
+        { id:"DP01", title:"Seguridade: conceitos e princípios", weight:5 },
+        { id:"DP02", title:"RGPS: estrutura e filiação", weight:5, prereq:["DP01"] },
+        { id:"DP03", title:"Segurados e dependentes", weight:5, prereq:["DP02"] },
+        { id:"DP04", title:"Carência e qualidade de segurado", weight:5, prereq:["DP03"] },
+        { id:"DP05", title:"Benefícios por incapacidade", weight:5, prereq:["DP04"] },
+        { id:"DP06", title:"Pensão por morte", weight:5, prereq:["DP03"] },
+      ]},
+      { subject:"Constitucional (Seguridade)", topics:[
+        { id:"CS01", title:"Direitos sociais + Seguridade", weight:5 },
+        { id:"CS02", title:"Administração Pública (art. 37)", weight:4, prereq:["CS01"] },
+      ]},
+      { subject:"Português", topics:[
+        { id:"LP01", title:"Interpretação de texto", weight:5 },
+        { id:"LP02", title:"Coesão e coerência", weight:4, prereq:["LP01"] },
+      ]},
+      { subject:"Informática", topics:[
+        { id:"IF01", title:"Noções: hardware/software/SO", weight:4 },
+        { id:"IF02", title:"Internet + segurança", weight:5, prereq:["IF01"] },
+      ]},
+    ]
+  },
+  INSS_TECNICO: {
+    subjects: [
+      { subject:"Previdenciário (Operacional)", topics:[
+        { id:"DP01", title:"Seguridade: visão geral", weight:5 },
+        { id:"DP03", title:"Segurados e dependentes", weight:5, prereq:["DP01"] },
+        { id:"DP04", title:"Carência + qualidade", weight:5, prereq:["DP03"] },
+        { id:"DP06", title:"Pensão por morte", weight:5, prereq:["DP03"] },
+      ]},
+      { subject:"Português", topics:[
+        { id:"LP01", title:"Interpretação de texto", weight:5 },
+        { id:"LP03", title:"Pontuação essencial", weight:4, prereq:["LP01"] },
+      ]},
+      { subject:"Informática", topics:[
+        { id:"IF01", title:"Noções + internet", weight:4 },
+        { id:"IF02", title:"Segurança digital", weight:5, prereq:["IF01"] },
+      ]},
+      { subject:"Raciocínio Lógico", topics:[
+        { id:"RL01", title:"Proposições e negações", weight:4 },
+        { id:"RL02", title:"Tabelas/diagramas", weight:4, prereq:["RL01"] },
+      ]},
+    ]
+  }
+};
+
+const KEY = "estudo_os_offline_v1";
+let DB = loadDB();
+let currentUser = DB.currentUser || USERS[0];
+
+function loadDB(){
+  try{ return JSON.parse(localStorage.getItem(KEY)) || { currentUser:USERS[0], profiles:{} }; }
+  catch{ return { currentUser:USERS[0], profiles:{} }; }
+}
+function saveDB(){
+  localStorage.setItem(KEY, JSON.stringify(DB));
+}
+function getState(){
+  if(!DB.profiles[currentUser]) DB.profiles[currentUser] = blankState();
+  return DB.profiles[currentUser];
+}
+function blankState(){ return { user:null, tasks:{}, errors:[], cards:[], reviews:[], logs:[] }; }
+
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function parseISO(iso){ return new Date(iso+"T00:00:00"); }
+function addDays(iso, n){ const d=parseISO(iso); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+function daysBetween(a,b){ return Math.floor((parseISO(b)-parseISO(a))/(1000*60*60*24)); }
+
+function flatten(courseId){
+  const c = CURRICULUM[courseId];
+  const out=[];
+  for(const s of c.subjects) for(const t of s.topics) out.push({ ...t, subject:s.subject, prereq:t.prereq||[] });
+  return out;
+}
+function ordered(courseId){
+  const topics=flatten(courseId);
+  const map=new Map(topics.map(t=>[t.id,t]));
+  const indeg=new Map(topics.map(t=>[t.id,0]));
+  const adj=new Map(topics.map(t=>[t.id,[]]));
+  for(const t of topics){
+    for(const p of (t.prereq||[])){
+      if(map.has(p)){
+        indeg.set(t.id, indeg.get(t.id)+1);
+        adj.get(p).push(t.id);
+      }
+    }
+  }
+  const q=[];
+  for(const [id,deg] of indeg.entries()) if(deg===0) q.push(id);
+  q.sort((a,b)=>(map.get(b).weight||0)-(map.get(a).weight||0));
+  const res=[];
+  while(q.length){
+    const id=q.shift();
+    res.push(map.get(id));
+    for(const nxt of adj.get(id)){
+      indeg.set(nxt, indeg.get(nxt)-1);
+      if(indeg.get(nxt)===0){
+        q.push(nxt);
+        q.sort((a,b)=>(map.get(b).weight||0)-(map.get(a).weight||0));
+      }
+    }
+  }
+  const seen=new Set(res.map(x=>x.id));
+  for(const t of topics) if(!seen.has(t.id)) res.push(t);
+  return res;
+}
+function ensureTask(state, date, slot, topic){
+  const key = `${date}::${slot}`;
+  if(!state.tasks[key]){
+    state.tasks[key] = { id:key, date, slot, topic_id:topic.id, subject:topic.subject, title:topic.title,
+      planned_minutes: 90, status:"PENDING", completed_minutes:0 };
+  }
+  return state.tasks[key];
+}
+function getTodaysTasks(state){
+  const { course_id, start_date } = state.user;
+  const dayIdx = Math.max(0, daysBetween(start_date, todayISO()));
+  const topics = ordered(course_id);
+  const done = new Set(Object.values(state.tasks).filter(t=>t.status==="DONE").map(t=>t.topic_id));
+  const remaining = topics.filter(t=>!done.has(t.id));
+  const pickA = remaining[dayIdx % Math.max(1, remaining.length)] || topics[dayIdx % topics.length];
+  const pickB = remaining.find(t=>t.subject!==pickA.subject) || remaining[(dayIdx+1)%Math.max(1,remaining.length)] || topics[(dayIdx+1)%topics.length];
+  const date=todayISO();
+  return [ ensureTask(state,date,1,pickA), ensureTask(state,date,2,pickB) ];
+}
+
+function defaultCard(target=0.90){
+  return { difficulty:6, stability:1, due_date:todayISO(), last_review:null, target };
+}
+function scheduleNext(state, card, rating){
+  const target = state.user?.target_retention ?? 0.90;
+  const aggress = (target===0.90)?0.95:1.10;
+  const base = Math.max(1, Math.round(card.state.stability));
+  let mult=1;
+  if(rating==="AGAIN") mult=0.6;
+  if(rating==="HARD")  mult=1.0;
+  if(rating==="GOOD")  mult=1.8;
+  if(rating==="EASY")  mult=2.6;
+
+  if(rating==="AGAIN") card.state.difficulty = Math.min(10, card.state.difficulty+0.4);
+  if(rating==="HARD")  card.state.difficulty = Math.min(10, card.state.difficulty+0.1);
+  if(rating==="GOOD")  card.state.difficulty = Math.max(1, card.state.difficulty-0.1);
+  if(rating==="EASY")  card.state.difficulty = Math.max(1, card.state.difficulty-0.2);
+
+  const d = card.state.difficulty/10;
+  const growth = (rating==="AGAIN") ? 0.85 : (1 + (0.60*(1-d)));
+  card.state.stability = Math.max(1, card.state.stability*growth);
+
+  const interval = Math.max(1, Math.round(base*mult*aggress));
+  card.state.last_review = todayISO();
+  card.state.due_date = addDays(todayISO(), interval);
+}
+
+function reviewQueue(state){
+  const t=todayISO();
+  const due = state.cards.filter(c=>(c.state?.due_date||t)<=t);
+  const overdue = state.cards.filter(c=>(c.state?.due_date||t)<t);
+  return { due, overdue };
+}
+
+function coverage(state){
+  const topics = flatten(state.user.course_id);
+  const done = new Set(Object.values(state.tasks).filter(t=>t.status==="DONE").map(t=>t.topic_id));
+  const c = topics.filter(t=>done.has(t.id)).length;
+  return topics.length ? (c/topics.length)*100 : 0;
+}
+
+function setWho(){
+  document.getElementById("who").textContent = "Perfil: " + currentUser;
+}
+function renderNav(route){
+  const nav = document.getElementById("nav");
+  nav.innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="${route==='setup'?'primary':'ghost'}" data-r="setup">Setup</button>
+      <button class="${route==='today'?'primary':'ghost'}" data-r="today">Hoje</button>
+      <button class="${route==='errors'?'primary':'ghost'}" data-r="errors">Erros</button>
+      <button class="${route==='cards'?'primary':'ghost'}" data-r="cards">Flashcards</button>
+      <button class="${route==='dash'?'primary':'ghost'}" data-r="dash">Dashboard</button>
+    </div>
+    <div class="sep"></div>
+    <div class="muted">
+      Publicável no GitHub Pages. Dados ficam no <code>localStorage</code> deste navegador.
+      <br/>Para sincronização entre celulares/PC: depois trocamos para Firebase.
+    </div>
+  `;
+  nav.querySelectorAll("[data-r]").forEach(b=> b.onclick = ()=> render(b.getAttribute("data-r")));
+}
+const view = document.getElementById("view");
+
+function render(route){
+  setWho();
+  renderNav(route);
+  const state = getState();
+
+  if(!state.user && route!=="setup") route="setup";
+
+  if(route==="setup"){
+    view.innerHTML = `
+      <div class="card">
+        <h2>Setup</h2>
+        <div class="muted">Cada perfil tem seu próprio setup (local).</div>
+        <div class="sep"></div>
+        <div class="row">
+          <div>
+            <div class="muted">Nome</div>
+            <input id="name" value="${state.user?.name||currentUser}"/>
+          </div>
+          <div>
+            <div class="muted">Cargo</div>
+            <select id="course">
+              ${CARGOS.map(c=>`<option value="${c.id}" ${state.user?.course_id===c.id?'selected':''}>${c.name}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <div class="muted">Data de início</div>
+            <input id="start" type="date" value="${state.user?.start_date||todayISO()}"/>
+          </div>
+          <div>
+            <div class="muted">Meta retenção</div>
+            <select id="ret">
+              <option value="0.9" ${(state.user?.target_retention??0.9)===0.9?'selected':''}>90%</option>
+              <option value="0.85" ${(state.user?.target_retention??0.9)===0.85?'selected':''}>85%</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="primary" id="save">Salvar</button>
+        </div>
+      </div>
+    `;
+    document.getElementById("save").onclick = ()=>{
+      state.user = {
+        name: document.getElementById("name").value.trim() || currentUser,
+        course_id: document.getElementById("course").value,
+        start_date: document.getElementById("start").value || todayISO(),
+        target_retention: parseFloat(document.getElementById("ret").value||"0.9")
+      };
+      saveDB();
+      render("today");
+    };
+    return;
+  }
+
+  if(route==="today"){
+    const tasks = getTodaysTasks(state);
+    saveDB();
+
+    const rq = reviewQueue(state);
+    view.innerHTML = `
+      <div class="grid">
+        <div class="card">
+          <h2>Hoje (${todayISO()})</h2>
+          <div class="muted">${state.user.name} • ${CARGOS.find(c=>c.id===state.user.course_id)?.name}</div>
+          <div class="sep"></div>
+          <div class="list">
+            ${tasks.map(t=>`
+              <div class="item">
+                <div>
+                  <span class="pill">${t.subject}</span>
+                  <strong>${t.title}</strong>
+                  <div class="muted">${t.planned_minutes} min • ${t.status==="DONE"?"✅":"⏳"}</div>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  ${t.status!=="DONE" ? `<button class="primary" data-done="${t.id}">Concluir</button>` : ""}
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Revisões</h2>
+          <div class="kpis">
+            <div class="kpi"><div class="muted">Devidos hoje</div><div class="v">${rq.due.length}</div></div>
+            <div class="kpi"><div class="muted">Atrasados</div><div class="v">${rq.overdue.length}</div></div>
+            <div class="kpi"><div class="muted">Cobertura</div><div class="v">${coverage(state).toFixed(1)}%</div></div>
+            <div class="kpi"><div class="muted">Flashcards</div><div class="v">${state.cards.length}</div></div>
+          </div>
+          <div class="sep"></div>
+          <button class="primary" id="go">Ir para Flashcards</button>
+        </div>
+      </div>
+    `;
+    document.querySelectorAll("[data-done]").forEach(b=>{
+      b.onclick = ()=>{
+        const id=b.getAttribute("data-done");
+        state.tasks[id].status="DONE";
+        state.tasks[id].completed_minutes=state.tasks[id].planned_minutes;
+        saveDB();
+        render("today");
+      };
+    });
+    document.getElementById("go").onclick = ()=> render("cards");
+    return;
+  }
+
+  if(route==="errors"){
+    const topics = flatten(state.user.course_id);
+    view.innerHTML = `
+      <div class="grid">
+        <div class="card">
+          <h2>Caderno de Erros</h2>
+          <div class="muted">Salvar erro → gera flashcard automaticamente.</div>
+          <div class="sep"></div>
+          <div class="row">
+            <div>
+              <div class="muted">Tema</div>
+              <select id="topic">
+                ${topics.map(t=>`<option value="${t.id}">${t.subject} — ${t.title}</option>`).join("")}
+              </select>
+            </div>
+            <div>
+              <div class="muted">Dificuldade (1–5)</div>
+              <input id="diff" type="number" min="1" max="5" value="3"/>
+            </div>
+          </div>
+          <div style="margin-top:10px;">
+            <div class="muted">Pergunta</div>
+            <textarea id="q" rows="3" placeholder="Cole a questão..."></textarea>
+          </div>
+          <div style="margin-top:10px;">
+            <div class="muted">Regra certa / explicação</div>
+            <textarea id="exp" rows="3" placeholder="Artigo, súmula, exceção..."></textarea>
+          </div>
+          <div style="margin-top:12px;">
+            <button class="primary" id="saveErr">Salvar erro</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Últimos erros</h2>
+          <div class="muted">Total: <b>${state.errors.length}</b></div>
+          <div class="sep"></div>
+          <div class="list">
+            ${state.errors.slice().reverse().slice(0,10).map(e=>{
+              const t = topics.find(x=>x.id===e.topic_id);
+              return `
+                <div class="item">
+                  <div>
+                    <span class="pill">${t?.subject||"Tema"}</span>
+                    <strong>${t?.title||e.topic_id}</strong>
+                    <div class="muted">${(e.question_text||"").slice(0,80)}${(e.question_text||"").length>80?"…":""}</div>
+                  </div>
+                </div>
+              `;
+            }).join("") || `<div class="muted">Nenhum erro ainda.</div>`}
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById("saveErr").onclick = ()=>{
+      const topic_id = document.getElementById("topic").value;
+      const difficulty = Math.max(1, Math.min(5, parseInt(document.getElementById("diff").value||"3",10)));
+      const question_text = document.getElementById("q").value.trim();
+      const explanation = document.getElementById("exp").value.trim();
+      if(!question_text){ alert("Cole a pergunta."); return; }
+
+      const err = { id:"e_"+crypto.randomUUID(), created_at:todayISO(), topic_id, difficulty, question_text, explanation };
+      state.errors.push(err);
+
+      const t = topics.find(x=>x.id===topic_id);
+      const card = {
+        id:"c_"+crypto.randomUUID(),
+        topic_id,
+        source:"error",
+        front:`(${t?.subject||"Tema"}) ${t?.title||topic_id}\n\nPergunta: ${question_text}`,
+        back:`Regra/explicação:\n${explanation || "(adicione aqui)"}\n\nDificuldade: ${difficulty}`,
+        created_at:todayISO(),
+        state: defaultCard(state.user.target_retention)
+      };
+      state.cards.push(card);
+
+      saveDB();
+      render("errors");
+    };
+    return;
+  }
+
+  if(route==="cards"){
+    const rq = reviewQueue(state);
+    const due = rq.due.sort((a,b)=>(a.state.due_date||"")<(b.state.due_date||"")?-1:1);
+    const current = due[0] || null;
+
+    view.innerHTML = `
+      <div class="grid">
+        <div class="card">
+          <h2>Flashcards</h2>
+          <div class="muted">Devidos: <b>${rq.due.length}</b> • Atrasados: <b>${rq.overdue.length}</b></div>
+          <div class="sep"></div>
+
+          ${current ? `
+            <div class="item" style="flex-direction:column;align-items:stretch;">
+              <div style="white-space:pre-wrap;">${escapeHTML(current.front)}</div>
+              <div class="sep"></div>
+              <div style="white-space:pre-wrap;">${escapeHTML(current.back)}</div>
+              <div class="sep"></div>
+              <div class="muted">Due: ${current.state.due_date} • D: ${current.state.difficulty.toFixed(1)} • S: ${current.state.stability.toFixed(1)}</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+                <button data-rate="AGAIN">Again</button>
+                <button data-rate="HARD">Hard</button>
+                <button class="primary" data-rate="GOOD">Good</button>
+                <button data-rate="EASY">Easy</button>
+              </div>
+            </div>
+          ` : `<div class="muted">Nada para revisar hoje ✅</div>`}
+
+          <div class="sep"></div>
+          <div class="muted">Criar flashcard manual</div>
+          <textarea id="f" rows="2" placeholder="Frente..."></textarea>
+          <textarea id="b" rows="2" placeholder="Verso..." style="margin-top:8px;"></textarea>
+          <button id="add" class="ghost" style="margin-top:8px;">Adicionar</button>
+        </div>
+
+        <div class="card">
+          <h2>Biblioteca</h2>
+          <div class="muted">Total: <b>${state.cards.length}</b></div>
+          <div class="sep"></div>
+          <div class="list">
+            ${state.cards.slice().reverse().slice(0,12).map(c=>`
+              <div class="item">
+                <div>
+                  <strong>${escapeHTML((c.front||"").slice(0,60))}${(c.front||"").length>60?"…":""}</strong>
+                  <div class="muted">Due: ${c.state?.due_date||todayISO()} • Fonte: ${c.source||"manual"}</div>
+                </div>
+              </div>
+            `).join("") || `<div class="muted">Nenhum card ainda.</div>`}
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.querySelectorAll("[data-rate]").forEach(b=>{
+      b.onclick = ()=>{
+        if(!current) return;
+        scheduleNext(state, current, b.getAttribute("data-rate"));
+        state.reviews.push({ id:"r_"+crypto.randomUUID(), card_id:current.id, date:todayISO(), rating:b.getAttribute("data-rate") });
+        saveDB();
+        render("cards");
+      };
+    });
+
+    document.getElementById("add").onclick = ()=>{
+      const front=document.getElementById("f").value.trim();
+      const back=document.getElementById("b").value.trim();
+      if(!front||!back) return alert("Preencha frente e verso.");
+      state.cards.push({
+        id:"c_"+crypto.randomUUID(),
+        topic_id: ordered(state.user.course_id)[0]?.id || "GEN",
+        source:"manual",
+        front, back,
+        created_at:todayISO(),
+        state: defaultCard(state.user.target_retention)
+      });
+      saveDB();
+      render("cards");
+    };
+    return;
+  }
+
+  if(route==="dash"){
+    const rq = reviewQueue(state);
+    view.innerHTML = `
+      <div class="card">
+        <h2>Dashboard</h2>
+        <div class="kpis">
+          <div class="kpi"><div class="muted">Cobertura</div><div class="v">${coverage(state).toFixed(1)}%</div></div>
+          <div class="kpi"><div class="muted">Erros</div><div class="v">${state.errors.length}</div></div>
+          <div class="kpi"><div class="muted">Flashcards</div><div class="v">${state.cards.length}</div></div>
+          <div class="kpi"><div class="muted">Revisões hoje</div><div class="v">${rq.due.length}</div></div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+}
+
+function escapeHTML(s){
+  return (s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+}
+
+document.getElementById("switchBtn").onclick = ()=>{
+  const pick = prompt("Escolha o perfil:\\n" + USERS.map((u,i)=>`${i+1}. ${u}`).join("\\n") + "\\n\\nDigite o número:");
+  const idx = parseInt(pick||"",10)-1;
+  if(idx>=0 && idx<USERS.length){
+    currentUser = USERS[idx];
+    DB.currentUser = currentUser;
+    saveDB();
+    render("setup");
+  }
+};
+
+document.getElementById("resetBtn").onclick = ()=>{
+  if(confirm("Resetar SOMENTE o perfil atual?")){
+    DB.profiles[currentUser] = blankState();
+    saveDB();
+    render("setup");
+  }
+};
+
+setWho();
+render("setup");
+</script>
+</body>
+</html>
